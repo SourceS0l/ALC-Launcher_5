@@ -254,11 +254,14 @@ $('search').oninput = render;
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
 // comes back into view. "Later" hides it until an even newer build is published.
 let skipped = 0;
-async function checkUpdate() {
+async function checkUpdate(manual) {
   if (!window.api.checkUpdate) return;
   const u = await window.api.checkUpdate();
   if (u.current) $('stamp').textContent = 'Build ' + u.current;
-  if (!u.current || !u.latest || u.latest <= u.current || u.latest <= skipped) return;
+  if (!u.current || !u.latest) return manual && say('Could not check for updates. Check your internet connection and try again.');
+  if (u.latest <= u.current) return manual && say('You have the latest version (Build ' + u.current + ').');
+  if (u.latest <= skipped && !manual) return;
+  if (manual) say('Update available: Build ' + u.latest);
   $('updMsg').textContent = 'Update available: Build ' + u.latest + (u.notes ? ' - ' + u.notes : '') +
     (window.api.web ? '' : '. Download it, then run build.bat again.');
   $('updBtn').textContent = window.api.web ? 'Reload to update' : 'Download';
@@ -266,6 +269,11 @@ async function checkUpdate() {
   $('update').hidden = false;
 }
 $('updBtn').onclick = () => window.api.applyUpdate();
-setInterval(checkUpdate, 30 * 60 * 1000);
+$('checkBtn').onclick = async () => {
+  $('checkBtn').disabled = true; say('Checking for updates...');
+  await checkUpdate(true);
+  $('checkBtn').disabled = false;
+};
+setInterval(() => checkUpdate(), 30 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
-init().then(checkUpdate);
+init().then(() => checkUpdate());

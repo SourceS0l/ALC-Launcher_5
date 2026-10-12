@@ -81,6 +81,7 @@ Editing in VS Code
 Publishing an update (users get a notice)
 - Make your changes, then open version.json and raise "build" by one (e.g. 8 -> 9). Optionally put a short
   description in "notes", e.g. "notes": "Added Sensor Builder 9.0". Commit and push to GitHub.
+- Users can also click "Check for updates" at the bottom of the app at any time.
 - Within a few minutes, anyone using the web version sees a bar saying "Update available" with a
   "Reload to update" button. It checks when the app opens, every 30 minutes, and when the window is reopened.
 - Anyone using the desktop .exe sees the same bar with a "Download" button that opens the GitHub page;
