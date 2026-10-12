@@ -77,3 +77,12 @@ Editing in VS Code
     logo-*.png   the intro logo pieces
     build.bat    builds the .exe and Desktop shortcut
 - After editing, double-click build.bat to make a new .exe.
+
+Publishing an update (users get a notice)
+- Make your changes, then open version.json and raise "build" by one (e.g. 8 -> 9). Optionally put a short
+  description in "notes", e.g. "notes": "Added Sensor Builder 9.0". Commit and push to GitHub.
+- Within a few minutes, anyone using the web version sees a bar saying "Update available" with a
+  "Reload to update" button. It checks when the app opens, every 30 minutes, and when the window is reopened.
+- Anyone using the desktop .exe sees the same bar with a "Download" button that opens the GitHub page;
+  they download the new files and run build.bat again.
+- If you don't raise "build", nobody is notified (web users still get the change the next time they open the app).

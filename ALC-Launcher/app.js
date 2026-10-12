@@ -250,4 +250,22 @@ $('themeBtn').onclick = () => {
   document.documentElement.dataset.theme = state.theme; save();
 };
 $('search').oninput = render;
-init();
+
+// Update notice: checks the published version.json on start, every 30 minutes, and when the window
+// comes back into view. "Later" hides it until an even newer build is published.
+let skipped = 0;
+async function checkUpdate() {
+  if (!window.api.checkUpdate) return;
+  const u = await window.api.checkUpdate();
+  if (u.current) $('stamp').textContent = 'Build ' + u.current;
+  if (!u.current || !u.latest || u.latest <= u.current || u.latest <= skipped) return;
+  $('updMsg').textContent = 'Update available: Build ' + u.latest + (u.notes ? ' - ' + u.notes : '') +
+    (window.api.web ? '' : '. Download it, then run build.bat again.');
+  $('updBtn').textContent = window.api.web ? 'Reload to update' : 'Download';
+  $('updLater').onclick = () => { skipped = u.latest; $('update').hidden = true; };
+  $('update').hidden = false;
+}
+$('updBtn').onclick = () => window.api.applyUpdate();
+setInterval(checkUpdate, 30 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+init().then(checkUpdate);

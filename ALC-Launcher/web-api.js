@@ -14,8 +14,15 @@ if (!window.api) {
     };
     inp.click();
   });
+  const getVersion = q => fetch('version.json' + q, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  const running = getVersion('');   // the build this page was loaded with
   window.api = {
     web: true,
+    checkUpdate: async () => {
+      const [cur, latest] = await Promise.all([running, getVersion('?fresh=' + Date.now())]);
+      return { current: cur && cur.build, latest: latest && latest.build, notes: latest && latest.notes };
+    },
+    applyUpdate: async () => location.reload(),
     load: async () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
     save: async d => { try { localStorage.setItem(KEY, JSON.stringify(d)); return true; } catch { return false; } },
     exists: async p => !!p,   // a browser cannot look at the disk, so any path that is filled in counts

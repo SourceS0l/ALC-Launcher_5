@@ -136,3 +136,7 @@ footer{padding-bottom:max(10px,env(safe-area-inset-bottom));padding-left:max(16p
 }
 
 .plus{width:38px;padding:6px 0;font-size:22px;line-height:1;font-weight:600;text-align:center}
+
+#update{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--panel-hi);border-bottom:1px solid var(--accent)}
+#update[hidden]{display:none}
+#updMsg{flex:1;min-width:200px}

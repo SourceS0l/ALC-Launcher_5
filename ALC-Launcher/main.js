@@ -13,6 +13,16 @@ ipcMain.handle('load', () => { try { return JSON.parse(fs.readFileSync(cfgFile()
 ipcMain.handle('save', (e, data) => { fs.writeFileSync(cfgFile(), JSON.stringify(data, null, 2)); return true; });
 ipcMain.handle('exists', (e, p) => !!p && (/^https?:/i.test(p) || fs.existsSync(p)));
 ipcMain.handle('configPath', () => cfgFile());
+// Update check: compares this copy's version.json with the one published on the website.
+const UPDATE_URL = 'https://sources0l.github.io/ALC-Launcher_5/ALC-Launcher/version.json';
+const DOWNLOAD_URL = 'https://github.com/SourceS0l/ALC-Launcher_5';
+ipcMain.handle('checkUpdate', async () => {
+  let current = null, latest = null;
+  try { current = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8')); } catch {}
+  try { const r = await fetch(UPDATE_URL + '?fresh=' + Date.now(), { cache: 'no-store' }); if (r.ok) latest = await r.json(); } catch {}
+  return { current: current && current.build, latest: latest && latest.build, notes: latest && latest.notes };
+});
+ipcMain.handle('applyUpdate', () => shell.openExternal(DOWNLOAD_URL));
 ipcMain.handle('browse', async () => {
   const r = await dialog.showOpenDialog({
     properties: ['openFile'],
