@@ -1,0 +1,9 @@
+{
+  "name": "alc-launcher",
+  "version": "1.0.0",
+  "productName": "ALC Launcher",
+  "description": "Launcher for Automated Logic tools",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "web": "npx --yes http-server@14.1.1 -c-1 -p 8080 ." },
+  "devDependencies": { "electron": "^31.0.0" }
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'">
+<title>ALC Launcher</title>
+<meta name="description" content="Launcher for Automated Logic tools">
+<meta name="theme-color" content="#0f1923">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ALC Launcher">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+<script src="web-api.js"></script>
+</head>
+<body>
+<div id="splash" aria-hidden="true">
+  <div class="stage">
+    <div class="mark">
+      <img class="m-body" src="logo-body.png" alt="">
+      <img class="m-bar" src="logo-bar.png" alt="">
+    </div>
+    <div class="word" id="splashWord"></div>
+    <div class="bar"><b></b></div>
+  </div>
+</div>
+<header>
+  <h1>ALC Launcher</h1>
+  <select id="verSel" hidden aria-label="Switch every tool to one version" title="Switch every tool to this version"></select>
+  <input id="search" type="search" placeholder="Search tools" aria-label="Search tools">
+  <button id="editBtn" class="btn">Edit</button>
+  <button id="installBtn" class="btn" hidden title="Install ALC Launcher as an app on this device">Install</button>
+  <button id="themeBtn" class="btn" aria-label="Switch light or dark theme">Theme</button>
+  <button id="addBtn" class="btn primary plus" aria-label="Add program" title="Add program">+</button>
+</header>
+<p id="hint" hidden>Edit mode: click any tile to change its name, path or look. Launching is paused.</p>
+<main id="board"></main>
+<footer><span id="status">Ready</span><span id="stamp">Build 8</span></footer>
+
+<dialog id="dlg">
+  <form method="dialog" id="form">
+    <h2 id="dlgTitle">Edit tool</h2>
+    <label>Name <input id="fName" required></label>
+    <div class="vers">
+      <span class="vhead">Versions and paths</span>
+      <div id="verRows"></div>
+      <button type="button" id="addVer" class="btn">Add version</button>
+      <datalist id="labels"></datalist>
+    </div>
+    <label>Launch arguments (optional) <input id="fArgs"></label>
+    <div class="vers">
+      <span class="vhead">Icon</span>
+      <div class="row">
+        <span id="iconPrev" class="badge"></span>
+        <button type="button" id="iconPick" class="btn">Choose image</button>
+        <button type="button" id="iconClear" class="btn">Use program's own icon</button>
+      </div>
+      <p class="note">Pick a PNG, JPG, SVG, ICO or similar. Without one, the tile uses the program's own icon, or the badge text if no path is set.</p>
+      <p class="note web-only">In the browser version, web links (https://...) open directly. A program path such as C:\...\app.exe is copied when you click the tile, so you can paste it into Start or Run (Win+R).</p>
+    </div>
+    <div class="row">
+      <label>Badge text <input id="fAbbr" maxlength="3"></label>
+      <label>Badge color <input id="fColor" type="color"></label>
+      <label>Group <select id="fCat"></select></label>
+    </div>
+    <div class="row end">
+      <button type="button" id="fDelete" class="btn danger">Delete</button>
+      <span class="grow"></span>
+      <button type="button" id="fCancel" class="btn">Cancel</button>
+      <button type="submit" id="fSave" class="btn primary">Save</button>
+    </div>
+  </form>
+</dialog>
+<script src="app.js"></script>
+</body>
+</html>

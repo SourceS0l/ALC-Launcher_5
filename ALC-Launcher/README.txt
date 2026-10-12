@@ -1,0 +1,79 @@
+ALC Launcher - build your .exe
+==============================
+1. Install Node.js LTS (nodejs.org) once.
+2. Double-click build.bat. It installs what it needs, builds the app, and puts an "ALC Launcher" shortcut on your Desktop.
+3. Open it from the Desktop. Right-click the icon > Pin to taskbar if you like.
+
+The finished program is the folder  dist\ALC Launcher-win32-x64  (run "ALC Launcher.exe" inside it).
+Copy that whole folder to any other PC to use it there; Node.js is NOT needed to run it, only to build it.
+
+Using it
+- Click a tile to launch. Amber dot = path not set or file not found. Clicking an amber tile opens the editor.
+- Edit button: change names, paths (Browse), arguments, badge text/color, group; add or delete tools.
+- Right-click any tile to edit it quickly.
+- Settings are saved automatically in your user profile, so rebuilding does not erase them.
+
+To test without building:  npm install  then  npm start
+
+Versions
+- Edit a tool > "Add version" to list each installed version with its own path (e.g. 8.5, 9.0). Each new row copies the previous path so you only change the version number in it.
+- Tools with more than one version show a dropdown on the tile; pick a version and the tile launches that one.
+- The header dropdown switches every tool that has a matching version label at once, so use the same labels (8.5, 9.0...) across tools.
+- Settings saved by the older version are upgraded automatically. Rebuild with build.bat to get the update into your .exe.
+
+Custom icons
+- Edit a tool > Icon > "Choose image" to pick a PNG, JPG, SVG, ICO etc. It is shrunk and stored in your settings.
+- "Use program's own icon" removes it and goes back to the icon pulled from the program itself.
+- Rebuild with build.bat to get this into your .exe.
+
+Opening animation
+- A short intro plays when the app starts (the company logo builds in, "Powered by ACCS" cascades in with a shimmer, a progress line fills over 3 seconds, then an iris wipe and tile cascade). Click or press any key to skip it.
+- If Windows "Animation effects" are off, it plays as a simple fade instead.
+- Important: the bottom-right of the app shows "Build 5 / animated intro" when you are running the newest version. The animation only shows after you REBUILD (double-click build.bat) and open the new app from dist\ALC Launcher-win32-x64, or run "npm start" to test.
+
+Adding programs
+- Click the blue "+" at the top right. Fill in the name, browse to the program, optionally add versions, pick an icon, badge color and group, then Save.
+- New programs get every option the built-in ones have, and can be edited or deleted later (right-click a tile, or use Edit).
+
+Intro logo and timing
+- The logo comes from logo-body.png and logo-bar.png (the two pieces of the mark, same size, stacked). logo.png is the full mark for reference.
+- To change the wording, edit [['Powered by ', 'dim'], ['ACCS', 'brand']] in startSplash() in app.js.
+- To change how long the intro stays up, edit the 3000 (milliseconds) in startSplash() in app.js. The animation timings are in style.css under "Opening animation".
+
+Windows on ARM (Snapdragon, Surface Pro X, Parallels on Apple Silicon, etc.)
+- build.bat now detects the processor and builds a native version (folder name ends in win32-arm64). Rebuild on the ARM PC itself.
+- If the app still opens a blank window or closes right away: right-click the Desktop shortcut > Properties, and at the very end of the Target box add a space and  --safe  then click OK.
+
+Installable web app (PWA) - phones, tablets, Macs, Chromebooks, any PC
+- The same files also work as a web app that can be installed on any device. No build step is needed.
+- Put this folder on any HTTPS web host (GitHub Pages, Netlify, Azure Static Web Apps, an IIS site, ...).
+  Installing only works over https:// (or http://localhost for testing).
+  Files the web host needs: index.html, style.css, app.js, web-api.js, sw.js, manifest.webmanifest, logo*.png, icons\
+- Install it: Chrome / Edge / Android: click "Install" in the header, or the install icon in the address bar.
+  iPhone / iPad: open it in Safari > Share > Add to Home Screen.
+- It keeps working offline once it has been opened.
+- Limits of the web version (browsers do not allow these, on any device):
+    * It cannot start programs on the PC. Web links (https://...) open normally. Clicking a tile with a
+      program path like C:\...\app.exe copies the path, so you can paste it into Start or Win+R.
+    * No Browse button and no automatic program icons (choose a custom icon image instead).
+    * Settings are stored in that browser on that device, separately from the desktop app.
+  For real one-click program launching on Windows, keep using the desktop .exe from build.bat.
+- To try it on this PC: run  npm run web  then open http://localhost:8080
+- After changing files on the web host, bump VERSION at the top of sw.js so installed copies refresh.
+
+Editing in VS Code
+- File > Open Folder... and choose this folder.
+- Open a terminal in VS Code (Ctrl+`) and run  npm install  once.
+- Press F5 (Run ALC Launcher) or run  npm start  to try your changes. Close and reopen the app to see edits.
+- Where things live:
+    index.html   page structure (header, tiles area, editor window, intro splash)
+    style.css    all styling, colors (top of file) and the intro animation ("Opening animation")
+    app.js       the app logic: tiles, versions, editor, intro text and timing (startSplash)
+    main.js      the desktop side: launching programs, file pickers, saving settings, safe mode
+    preload.js   the small bridge between app.js and main.js
+    web-api.js   the same bridge for the browser / installed web app, plus the Install button
+    sw.js        offline cache for the web app
+    manifest.webmanifest, icons\   web app name, colors and home-screen icons
+    logo-*.png   the intro logo pieces
+    build.bat    builds the .exe and Desktop shortcut
+- After editing, double-click build.bat to make a new .exe.
