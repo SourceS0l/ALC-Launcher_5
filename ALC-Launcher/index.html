@@ -33,6 +33,7 @@
   <select id="verSel" hidden aria-label="Switch every tool to one version" title="Switch every tool to this version"></select>
   <input id="search" type="search" placeholder="Search tools" aria-label="Search tools">
   <button id="editBtn" class="btn">Edit</button>
+  <a id="deskBtn" class="btn web-only" title="Download the desktop version, which opens programs with one click">Get desktop app</a>
   <button id="installBtn" class="btn" hidden title="Install ALC Launcher as an app on this device">Install</button>
   <button id="themeBtn" class="btn" aria-label="Switch light or dark theme">Theme</button>
   <button id="addBtn" class="btn primary plus" aria-label="Add program" title="Add program">+</button>
@@ -46,6 +47,25 @@
 <main id="board"></main>
 <footer><span id="status">Ready</span><span class="foot-r"><button id="checkBtn" class="btn">Check for updates</button><span id="stamp">Build 8</span></span></footer>
 
+<dialog id="deskDlg">
+  <form method="dialog">
+    <h2>Open programs with one click</h2>
+    <p>Web browsers are not allowed to start programs on your PC, so this page can only copy the program's path.
+      The desktop version of ALC Launcher opens programs directly.</p>
+    <ol>
+      <li>Click <b>Download desktop app</b> below.</li>
+      <li>Right-click the downloaded zip, choose <b>Extract All</b>, and put the folder somewhere permanent (for example Documents).</li>
+      <li>Open the folder and double-click <b>ALC Launcher.exe</b>. If Windows says it protected your PC, click <b>More info</b> &gt; <b>Run anyway</b>.</li>
+      <li>Optional: right-click its taskbar icon &gt; <b>Pin to taskbar</b>.</li>
+    </ol>
+    <p class="note" id="deskCopied"></p>
+    <div class="row end">
+      <span class="grow"></span>
+      <button class="btn" value="close">Close</button>
+      <a id="deskGet" class="btn primary">Download desktop app</a>
+    </div>
+  </form>
+</dialog>
 <dialog id="dlg">
   <form method="dialog" id="form">
     <h2 id="dlgTitle">Edit tool</h2>

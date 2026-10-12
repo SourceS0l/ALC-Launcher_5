@@ -1,0 +1,55 @@
+# Builds the desktop app and publishes it as a GitHub release whenever the build number in
+# ALC-Launcher/version.json goes up. Users download ALC-Launcher-Windows.zip from the latest release.
+name: Build desktop app
+
+on:
+  push:
+    branches: [main]
+    paths: ['ALC-Launcher/version.json', '.github/workflows/release.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ALC-Launcher
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read build number
+        id: ver
+        run: |
+          $b = (Get-Content version.json -Raw | ConvertFrom-Json).build
+          "tag=build-$b" >> $env:GITHUB_OUTPUT
+          "build=$b" >> $env:GITHUB_OUTPUT
+          gh release view "build-$b" *> $null
+          "exists=$($LASTEXITCODE -eq 0)" >> $env:GITHUB_OUTPUT
+          exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - uses: actions/setup-node@v4
+        if: steps.ver.outputs.exists == 'False'
+        with:
+          node-version: 20
+
+      - name: Build ALC Launcher.exe
+        if: steps.ver.outputs.exists == 'False'
+        run: |
+          npm install
+          npx --yes @electron/packager@18.4.4 . "ALC Launcher" --platform=win32 --arch=x64 --out=dist --overwrite --icon=icon.ico --ignore="^/dist" --ignore="^/build\.bat" --ignore="^/\.vscode"
+          Compress-Archive -Path "dist/ALC Launcher-win32-x64" -DestinationPath ALC-Launcher-Windows.zip
+
+      - name: Publish release
+        if: steps.ver.outputs.exists == 'False'
+        run: |
+          $notes = (Get-Content version.json -Raw | ConvertFrom-Json).notes
+          if (-not $notes) { $notes = "Build ${{ steps.ver.outputs.build }}" }
+          gh release create "${{ steps.ver.outputs.tag }}" ALC-Launcher-Windows.zip --title "ALC Launcher Build ${{ steps.ver.outputs.build }}" --notes "$notes" --latest
+        env:
+          GH_TOKEN: ${{ github.token }}

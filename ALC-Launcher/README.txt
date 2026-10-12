@@ -84,6 +84,12 @@ Publishing an update (users get a notice)
 - Users can also click "Check for updates" at the bottom of the app at any time.
 - Within a few minutes, anyone using the web version sees a bar saying "Update available" with a
   "Reload to update" button. It checks when the app opens, every 30 minutes, and when the window is reopened.
-- Anyone using the desktop .exe sees the same bar with a "Download" button that opens the GitHub page;
-  they download the new files and run build.bat again.
+- Raising "build" also makes GitHub build the desktop app automatically (about 5 minutes) and publish it as
+  ALC-Launcher-Windows.zip under Releases. Anyone using the desktop .exe sees the update bar with a "Download"
+  button for that zip; they extract it over their old folder. Settings are kept.
 - If you don't raise "build", nobody is notified (web users still get the change the next time they open the app).
+
+Desktop app download (for users)
+- Browsers cannot start programs, so the web version offers "Get desktop app". It downloads the newest
+  ALC-Launcher-Windows.zip: extract it, open the folder, double-click ALC Launcher.exe. No Node.js needed.
+- Windows may say it protected your PC (the app is not code-signed): click More info > Run anyway.

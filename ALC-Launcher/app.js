@@ -141,8 +141,10 @@ $('verSel').onchange = e => {
 async function launch(t) {
   say('Opening ' + t.name + '...');
   const err = await window.api.launch(getVer(t).path, t.args);
-  if (err === 'COPIED') return say('Browsers cannot start programs. Path of ' + t.name + ' copied: paste it into Start or Win+R.');
-  if (err === 'COPY_FAILED') return say('Browsers cannot start programs. Path: ' + getVer(t).path);
+  if (err === 'COPIED' || err === 'COPY_FAILED') {
+    say(err === 'COPIED' ? 'Path of ' + t.name + ' copied.' : 'Path: ' + getVer(t).path);
+    return showDesktop(err === 'COPIED' ? 'For now, the path of ' + t.name + ' was copied, so you can paste it into Win+R.' : '');
+  }
   say(err ? 'Could not open ' + t.name + ': ' + err : 'Opened ' + t.name);
 }
 
@@ -269,10 +271,20 @@ async function checkUpdate(manual) {
   if (u.latest <= skipped && !manual) return;
   if (manual) say('Update available: Build ' + u.latest);
   $('updMsg').textContent = 'Update available: Build ' + u.latest + (u.notes ? ' - ' + u.notes : '') +
-    (window.api.web ? '' : '. Download it, then run build.bat again.');
+    (window.api.web ? '' : '. Download the zip, extract it, and replace your old ALC Launcher folder. Your tools and settings are kept.');
   $('updBtn').textContent = window.api.web ? 'Reload to update' : 'Download';
   $('updLater').onclick = () => { skipped = u.latest; $('update').hidden = true; };
   $('update').hidden = false;
+}
+// Web version only: offer the desktop app, which can actually start programs.
+function showDesktop(msg) {
+  $('deskCopied').textContent = msg || '';
+  $('deskDlg').showModal();
+}
+if (window.api.desktopUrl) {
+  $('deskBtn').href = $('deskGet').href = window.api.desktopUrl;
+  $('deskBtn').onclick = e => { e.preventDefault(); showDesktop(); };
+  $('deskGet').onclick = () => $('deskDlg').close();
 }
 $('updBtn').onclick = () => window.api.applyUpdate();
 $('checkBtn').onclick = async () => {

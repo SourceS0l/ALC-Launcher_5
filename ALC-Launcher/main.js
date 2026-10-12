@@ -15,7 +15,7 @@ ipcMain.handle('exists', (e, p) => !!p && (/^https?:/i.test(p) || fs.existsSync(
 ipcMain.handle('configPath', () => cfgFile());
 // Update check: compares this copy's version.json with the one published on the website.
 const UPDATE_URL = 'https://sources0l.github.io/ALC-Launcher_5/ALC-Launcher/version.json';
-const DOWNLOAD_URL = 'https://github.com/SourceS0l/ALC-Launcher_5';
+const DOWNLOAD_URL = 'https://github.com/SourceS0l/ALC-Launcher_5/releases/latest/download/ALC-Launcher-Windows.zip';
 ipcMain.handle('checkUpdate', async () => {
   let current = null, latest = null;
   try { current = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8')); } catch {}

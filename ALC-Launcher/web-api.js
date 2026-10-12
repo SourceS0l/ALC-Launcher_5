@@ -18,6 +18,7 @@ if (!window.api) {
   const running = getVersion('');   // the build this page was loaded with
   window.api = {
     web: true,
+    desktopUrl: 'https://github.com/SourceS0l/ALC-Launcher_5/releases/latest/download/ALC-Launcher-Windows.zip',
     checkUpdate: async () => {
       const [cur, latest] = await Promise.all([running, getVersion('?fresh=' + Date.now())]);
       return { current: cur && cur.build, latest: latest && latest.build, notes: latest && latest.notes };
