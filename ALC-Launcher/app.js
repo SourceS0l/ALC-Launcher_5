@@ -156,6 +156,7 @@ function openEditor(id) {
   $('fName').value = t.name; $('fArgs').value = t.args || '';
   $('fAbbr').value = t.abbr; $('fColor').value = t.color; $('fCat').value = t.cat;
   $('fDelete').hidden = !id;
+  $('pathTip').hidden = true;
   drawRows(); drawPrev();
   $('dlg').showModal();
 }
@@ -168,9 +169,14 @@ function drawRows() {
     lab.oninput = () => { v.label = lab.value; };
     const path = document.createElement('input');
     path.placeholder = 'C:\\Program Files\\...\\app.exe or https://...'; path.value = v.path;
-    path.oninput = () => { v.path = path.value; };
+    path.oninput = () => { v.path = path.value.trim().replace(/^"(.*)"$/, '$1'); };   // "Copy as path" adds quotes
+    path.onchange = () => { path.value = v.path; };
     const br = document.createElement('button'); br.type = 'button'; br.className = 'btn browse'; br.textContent = 'Browse';
-    br.onclick = async () => { const p = await window.api.browse(); if (p) { v.path = p; path.value = p; } };
+    br.onclick = async () => {
+      // Browsers never reveal where a file is, so the web version explains how to copy the path instead.
+      if (window.api.web) { $('pathTip').hidden = false; path.focus(); return; }
+      const p = await window.api.browse(); if (p) { v.path = p; path.value = p; }
+    };
     const rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn x'; rm.textContent = '\u00d7';
     rm.title = 'Remove this version'; rm.setAttribute('aria-label', 'Remove this version'); rm.disabled = draft.length < 2;
     rm.onclick = () => { draft.splice(i, 1); drawRows(); };
