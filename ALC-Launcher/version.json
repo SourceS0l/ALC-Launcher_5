@@ -1,6 +1,6 @@
 {
-  "build": 22,
-  "notes": "New black cat app icon",
+  "build": 23,
+  "notes": "Right-click a program to run it as administrator; easier-to-read version lists",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

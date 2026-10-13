@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   pickImage: () => ipcRenderer.invoke('pickImage'),
   icon: p => ipcRenderer.invoke('icon', p),
   launch: (p, a) => ipcRenderer.invoke('launch', p, a),
+  launchAdmin: (p, a) => ipcRenderer.invoke('launchAdmin', p, a),
   configPath: () => ipcRenderer.invoke('configPath'),
   checkUpdate: () => ipcRenderer.invoke('checkUpdate'),
   applyUpdate: () => ipcRenderer.invoke('applyUpdate')

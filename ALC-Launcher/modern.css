@@ -114,6 +114,22 @@ html[data-ui="modern"] label{font-size:12px;font-weight:550;color:var(--dim);gap
 html[data-ui="modern"] label input,html[data-ui="modern"] label select{font-size:13.5px;font-weight:400}
 html[data-ui="modern"] #verRows .btn{flex:none}
 
+/* Drop-down lists: solid colours, so the opened list (drawn by Windows) is easy to read */
+html[data-ui="modern"] select{background-color:var(--panel-hi);color:var(--text)}
+html[data-ui="modern"] select option{background-color:var(--panel);color:var(--text)}
+html[data-ui="modern"] select option:checked{background-color:var(--accent);color:var(--accent-ink)}
+html[data-ui="modern"] input[type=checkbox]{width:16px;height:16px;padding:0;margin:0;accent-color:var(--accent);box-shadow:none;cursor:pointer}
+
+/* Right-click menu and administrator shield */
+html[data-ui="modern"] .ctx{padding:6px;border-radius:var(--r-lg);background:var(--panel);border:1px solid var(--line-strong);box-shadow:var(--shadow-lg);animation:m-pop .14s var(--ease)}
+html[data-ui="modern"] .ctx button{padding:8px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:500}
+html[data-ui="modern"] .ctx button:hover,html[data-ui="modern"] .ctx button:focus-visible{background:var(--surface-3)}
+html[data-ui="modern"] .ctx button:not(.admin-only):not([data-act="edit"]),html[data-ui="modern"] .ctx [data-act="edit"]{padding-left:36px}
+html[data-ui="modern"] .ctx [aria-checked="true"] .box::after{border-color:var(--accent-ink)}
+html[data-ui="modern"] .ctx hr{border-top-color:var(--line)}
+html[data-ui="modern"] .shield{top:10px;right:28px}
+html[data-ui="modern"] label.check{color:var(--text);font-weight:500;font-size:12.5px}
+
 /* ---------- Banners ---------- */
 html[data-ui="modern"] #update{
   margin:14px 22px 0;padding:10px 10px 10px 16px;border-radius:var(--r-lg);gap:10px;
@@ -185,7 +201,7 @@ html[data-ui="modern"] .dot{top:14px;right:14px;width:8px;height:8px;background:
 html[data-ui="modern"] .dot.warn{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 20%,transparent)}
 
 /* Version picker on a tile */
-html[data-ui="modern"] .tile .ver{position:relative;height:28px;padding:0 6px;font-size:12px;border-radius:var(--r-sm);background:var(--surface-2)}
+html[data-ui="modern"] .tile .ver{position:relative;height:28px;padding:0 6px;font-size:12px;border-radius:var(--r-sm);background-color:var(--panel-hi)}
 
 /* Edit mode */
 html[data-ui="modern"] .editing .tile{border-style:dashed;border-color:var(--line-strong)}

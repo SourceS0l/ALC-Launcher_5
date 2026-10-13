@@ -148,7 +148,12 @@ async function makeTile(t) {
   const act = () => (editMode || !ok) ? openEditor(t.id) : launch(t);
   b.onclick = act;
   b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } };
-  b.oncontextmenu = e => { e.preventDefault(); openEditor(t.id); };
+  b.oncontextmenu = e => {
+    e.preventDefault();
+    const r = b.getBoundingClientRect(), kb = !e.clientX && !e.clientY;   // menu key / Shift+F10: open it at the tile
+    openMenu(t, ok, kb ? r.left + 12 : e.clientX, kb ? r.top + 24 : e.clientY);
+  };
+  if (t.admin && window.api.launchAdmin) b.insertAdjacentHTML('beforeend', '<svg class="shield" viewBox="0 0 24 24"><title>Runs as administrator</title><path d="M12 2 4 5v6c0 5.3 3.4 9.4 8 11 4.6-1.6 8-5.7 8-11V5z"/></svg>');
   if (editMode) {
     b.draggable = true;
     b.ondragstart = e => { dragId = t.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', t.id); b.classList.add('dragging'); };
@@ -212,9 +217,15 @@ function refreshLabels() {
   labels.forEach(l => { const o = document.createElement('option'); o.value = l; $('labels').appendChild(o); });
 }
 
-async function launch(t) {
-  say('Opening ' + t.name + '...');
+async function launch(t, admin = t.admin) {
   const p = getVer(t).path;
+  if (admin && window.api.launchAdmin && !isWinLink(p)) {   // settings links have nothing to elevate
+    say('Opening ' + t.name + ' as administrator...');
+    const err = await window.api.launchAdmin(p, t.args);
+    return say(err === 'CANCELLED' ? t.name + ' was not opened: the administrator prompt was cancelled.'
+      : err ? 'Could not open ' + t.name + ' as administrator: ' + err : 'Opened ' + t.name + ' as administrator');
+  }
+  say('Opening ' + t.name + '...');
   const err = isWinLink(p) ? await window.api.launch('C:\\Windows\\explorer.exe', p) : await window.api.launch(p, t.args);
   if (err === 'COPIED' || err === 'COPY_FAILED') {
     say(err === 'COPIED' ? 'Path of ' + t.name + ' copied.' : 'Path: ' + getVer(t).path);
@@ -223,6 +234,45 @@ async function launch(t) {
   say(err ? 'Could not open ' + t.name + ': ' + err : 'Opened ' + t.name);
 }
 
+// Right-click menu on a tile: Open, Run as administrator, Always run as administrator, Edit.
+// The administrator items only exist in the desktop app (browsers cannot start programs at all).
+if (!window.api.launchAdmin) document.body.classList.add('no-admin');
+let menuFor = null;
+function openMenu(t, ok, x, y) {
+  const m = $('ctx');
+  menuFor = t;
+  m.querySelector('[data-act="always"]').setAttribute('aria-checked', String(!!t.admin));
+  m.querySelectorAll('[data-act="open"],[data-act="admin"]').forEach(b => { b.disabled = !ok; b.title = ok ? '' : 'Set up the path first (Edit)'; });
+  m.hidden = false;
+  const r = m.getBoundingClientRect();   // keep it inside the window
+  m.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+  m.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+  m.querySelector('button:not([disabled])').focus();
+}
+function closeMenu() { $('ctx').hidden = true; menuFor = null; }
+$('ctx').onclick = e => {
+  const b = e.target.closest('button'), t = menuFor;
+  if (!b || b.disabled || !t) return;
+  closeMenu();
+  if (b.dataset.act === 'open') launch(t);
+  if (b.dataset.act === 'admin') launch(t, true);
+  if (b.dataset.act === 'edit') openEditor(t.id);
+  if (b.dataset.act === 'always') {
+    t.admin = !t.admin; save(); render();
+    say(t.admin ? t.name + ' will always run as administrator' : t.name + ' will run normally');
+  }
+};
+$('ctx').onkeydown = e => {   // arrow keys move through the items, Escape closes
+  const items = [...$('ctx').querySelectorAll('button:not([disabled])')].filter(b => b.offsetParent);
+  const i = items.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus(); }
+  if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); closeMenu(); }
+};
+document.addEventListener('mousedown', e => { if (menuFor && !$('ctx').contains(e.target)) closeMenu(); });
+window.addEventListener('scroll', () => { if (menuFor) closeMenu(); }, true);   // any scrolling area
+window.addEventListener('resize', () => { if (menuFor) closeMenu(); });
+window.addEventListener('blur', e => { if (menuFor && e.target === window) closeMenu(); });   // the window itself, not items inside it
+
 let draft = [], draftIcon = '';
 function openEditor(id) {
   editingId = id;
@@ -230,7 +280,7 @@ function openEditor(id) {
   draft = t.versions.map(v => ({ ...v }));
   draftIcon = t.icon || '';
   $('dlgTitle').textContent = id ? 'Edit ' + t.name : 'Add tool';
-  $('fName').value = t.name; $('fArgs').value = t.args || '';
+  $('fName').value = t.name; $('fArgs').value = t.args || ''; $('fAdmin').checked = !!t.admin;
   $('fAbbr').value = t.abbr; $('fColor').value = t.color; $('fCat').value = t.cat;
   $('fDelete').hidden = !id;
   $('pathTip').hidden = true;
@@ -308,7 +358,7 @@ $('form').onsubmit = () => {
   const prev = editingId ? state.tools.find(x => x.id === editingId) : null;
   const active = prev && versions.some(v => v.label === prev.active) ? prev.active : versions[0].label;
   const data = {
-    name, versions, active, icon: draftIcon, args: $('fArgs').value.trim(),
+    name, versions, active, icon: draftIcon, args: $('fArgs').value.trim(), admin: $('fAdmin').checked,
     abbr: $('fAbbr').value.trim() || name.slice(0, 2), color: $('fColor').value, cat: $('fCat').value
   };
   if (prev) Object.assign(prev, data);

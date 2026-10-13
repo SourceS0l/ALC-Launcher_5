@@ -190,3 +190,22 @@ body.web #deskBtn.web-only{display:inline-block}
 @keyframes cat-tail{from{transform:rotate(-9deg)}to{transform:rotate(11deg)}}
 @keyframes cat-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
 @keyframes cat-lick{from{transform:rotate(14deg)}to{transform:rotate(21deg)}}
+
+/* Right-click menu on a tile */
+.ctx{position:fixed;z-index:50;min-width:230px;padding:6px;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.45)}
+.ctx[hidden]{display:none}
+.ctx button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:6px;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.ctx button:hover,.ctx button:focus-visible{background:var(--panel-hi);outline:none}
+.ctx button:disabled{opacity:.45;cursor:default;background:none}
+.ctx hr{border:0;border-top:1px solid var(--line);margin:5px 4px}
+.ctx .uac{width:16px;height:16px;flex:none;fill:#3b8eea}
+.ctx .box{position:relative;width:16px;height:16px;flex:none;border:1.5px solid var(--dim);border-radius:4px}
+.ctx [aria-checked="true"] .box{background:var(--accent);border-color:var(--accent)}
+.ctx [aria-checked="true"] .box::after{content:"";position:absolute;left:3.5px;top:1px;width:4px;height:8px;border:solid #06222d;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.ctx button:not(.admin-only):not([data-act="edit"]){padding-left:36px}   /* line "Open" up with the items that have an icon */
+.ctx [data-act="edit"]{padding-left:36px}
+body.no-admin .admin-only{display:none !important}
+/* Shield on tiles that always run as administrator, and the editor checkbox */
+.shield{position:absolute;top:8px;right:26px;width:15px;height:15px;fill:#3b8eea}
+label.check{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
+label.check input{width:auto;margin:0}

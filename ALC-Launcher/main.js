@@ -105,6 +105,23 @@ ipcMain.handle('launch', async (e, p, args) => {
   return await shell.openPath(p); // empty string = success
 });
 
+// Run as administrator: PowerShell's Start-Process -Verb RunAs shows the Windows permission (UAC) prompt.
+// The command goes in as -EncodedCommand so spaces and quotes in paths or arguments cannot break it.
+const psq = s => "'" + String(s).replace(/'/g, "''") + "'";   // PowerShell single-quoted string
+ipcMain.handle('launchAdmin', (e, p, args) => new Promise(resolve => {
+  if (/^https?:/i.test(p)) { shell.openExternal(p); return resolve(''); }
+  let start = 'Start-Process -Verb RunAs -ErrorAction Stop -FilePath ' + psq(p);
+  if (args && args.trim()) start += ' -ArgumentList ' + psq(args.trim());
+  if (fs.existsSync(p)) start += ' -WorkingDirectory ' + psq(path.dirname(p));
+  // Progress output off and errors caught, so a failure comes back as one plain sentence on stdout
+  const cmd = '$ProgressPreference = "SilentlyContinue"; try { ' + start + ' } catch { [Console]::Out.Write($_.Exception.Message); exit 1 }';
+  let out = '';
+  const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(cmd, 'utf16le').toString('base64')], { windowsHide: true });
+  ps.stdout.on('data', d => { out += d; });
+  ps.on('error', x => resolve(String(x)));
+  ps.on('close', code => resolve(code === 0 ? '' : /cancel/i.test(out) ? 'CANCELLED' : (out.trim() || 'PowerShell exit code ' + code)));
+}));
+
 app.whenReady().then(() => {
   const win = new BrowserWindow({
     width: 660, height: 820, minWidth: 420, minHeight: 480,
