@@ -103,3 +103,9 @@ Desktop app download (for users)
 Full screen
 - The desktop app opens maximized (filling the screen, with the title bar and taskbar still visible).
 - Press F11 for true full screen (hides the title bar and taskbar); press F11 again to go back.
+
+IP Config
+- The IP Config tile opens a Command Prompt window that runs ipconfig, showing this PC's IP address on the
+  current network (look for "IPv4 Address"). It runs C:\Windows\System32\cmd.exe with the launch arguments
+  /c start "IP Config" cmd /k ipconfig  (desktop app only; the browser version can only copy the path).
+- To run another command the same way, add a tool with that path and arguments, replacing "ipconfig".

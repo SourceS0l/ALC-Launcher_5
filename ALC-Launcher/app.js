@@ -13,6 +13,13 @@ const DEFAULTS = [
   ['Google Chrome','gc','#d44638','Browsers',PF+'Google\\Chrome\\Application\\chrome.exe'],
   ['Mozilla Firefox','ff','#e66a1f','Browsers',PF+'Mozilla Firefox\\firefox.exe']
 ].map((d, i) => ({ id: 'd' + i, name: d[0], abbr: d[1], color: d[2], cat: d[3], versions: [{ label: 'Default', path: d[4] }], active: 'Default', args: '' }));
+// Tools added after the first release. They have fixed ids so they are added to saved settings once
+// (and not again if someone deletes them).
+const ADDED = [
+  { id: 'ipconfig', name: 'IP Config', abbr: 'ip', color: '#2f7d4f', cat: 'Apps',   // shows this PC's IP address
+    versions: [{ label: 'Default', path: 'C:\\Windows\\System32\\cmd.exe' }], active: 'Default', args: '/c start "IP Config" cmd /k ipconfig' }   // start opens a new Command Prompt window
+];
+DEFAULTS.push(...ADDED);
 
 let state = { theme: 'dark', tools: [] };
 let editMode = false, editingId = null, newId = null;
@@ -51,6 +58,12 @@ async function init() {
   startSplash();
   const saved = await window.api.load();
   state = saved || { theme: 'dark', tools: DEFAULTS };
+  state.added = state.added || [];   // ids from ADDED this settings file has already been given
+  for (const t of ADDED) {
+    if (state.added.includes(t.id)) continue;
+    if (!state.tools.some(x => x.id === t.id)) state.tools.push(JSON.parse(JSON.stringify(t)));
+    state.added.push(t.id); save();
+  }
   // Built-in tools that were dropped from the list. Removed from saved settings too, but only the
   // built-in copies (ids d0, d1...), so a tool someone added back themselves stays.
   const DROPPED = ['Internet Explorer', 'SeriCap', 'Sensor Scan', 'Sensor Builder', 'Trend Conversion Utility',

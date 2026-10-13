@@ -1,6 +1,6 @@
 {
-  "build": 16,
-  "notes": "Removed programs that are no longer used",
+  "build": 17,
+  "notes": "New IP Config tile shows your IP address",
   "files": [
     "index.html", "style.css", "app.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
