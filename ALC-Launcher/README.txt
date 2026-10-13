@@ -95,4 +95,5 @@ Desktop app download (for users)
 - Windows may say it protected your PC (the app is not code-signed): click More info > Run anyway.
 
 Full screen
-- The desktop app opens full screen. Press F11 to switch to a normal window and back. Alt+F4 closes it.
+- The desktop app opens maximized (filling the screen, with the title bar and taskbar still visible).
+- Press F11 for true full screen (hides the title bar and taskbar); press F11 again to go back.

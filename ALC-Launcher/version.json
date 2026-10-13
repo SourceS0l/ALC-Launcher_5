@@ -1,4 +1,4 @@
 {
   "build": 13,
-  "notes": "Desktop app now opens full screen (F11 to switch)"
+  "notes": "Desktop app now opens maximized (F11 for full screen)"
 }
