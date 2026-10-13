@@ -145,3 +145,7 @@ Network panel (desktop app)
   (255.255.255.0, 24 or /24), gateway and DNS (optional). The form checks the values first (valid addresses,
   gateway on the same network, not the network/broadcast address), then Windows asks for administrator
   permission and the change is made with netsh. "Windows settings" still opens the Settings page.
+
+OptiFlex Service Port
+- Opens http://169.254.1.1 in the default web browser (the controller's service-port page). Plug the laptop
+  into the controller's service port first; the Network panel shows when the link is up.

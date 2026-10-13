@@ -19,7 +19,9 @@ const ADDED = [
   { id: 'ipconfig', name: 'IP Config', abbr: 'ip', color: '#2f7d4f', cat: 'Apps',   // shows this PC's IP address
     versions: [{ label: 'Default', path: 'C:\\Windows\\System32\\cmd.exe' }], active: 'Default', args: '/c start "IP Config" cmd /k ipconfig' },   // start opens a new Command Prompt window
   { id: 'ethernet', name: 'Change IP (Ethernet)', abbr: 'net', color: '#2d6fb7', cat: 'Apps',   // Settings > Ethernet: adapter > IP assignment > Edit
-    versions: [{ label: 'Default', path: 'ms-settings:network-ethernet' }], active: 'Default', args: '' }
+    versions: [{ label: 'Default', path: 'ms-settings:network-ethernet' }], active: 'Default', args: '' },
+  { id: 'optiflex', name: 'OptiFlex Service Port', abbr: 'of', color: '#c4512b', cat: 'Apps',   // controller's service-port web page, in the default browser
+    versions: [{ label: 'Default', path: 'http://169.254.1.1' }], active: 'Default', args: '' }
 ];
 DEFAULTS.push(...ADDED);
 
