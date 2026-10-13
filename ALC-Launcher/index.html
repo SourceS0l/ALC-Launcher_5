@@ -32,6 +32,7 @@
 <header>
   <h1><img class="m-only brand-mark" src="logo.png" alt=""><span>ALC Launcher</span></h1>
   <div class="search"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" type="search" placeholder="Search tools" aria-label="Search tools"><kbd class="m-only">Ctrl K</kbd></div>
+  <button id="netBtn" class="btn net-only" title="Show or hide this PC's network adapters and IP addresses"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-4h14v4"/></svg><span class="lbl">Network</span></button>
   <button id="editBtn" class="btn"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="lbl">Edit</span></button>
   <a id="deskBtn" class="btn web-only" title="Download the desktop version, which opens programs with one click"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span class="lbl">Get desktop app</span></a>
   <button id="installBtn" class="btn" hidden title="Install ALC Launcher as an app on this device"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span class="lbl">Install</span></button>
@@ -44,6 +45,16 @@
   <button id="updLater" class="btn">Later</button>
 </div>
 <p id="hint" hidden>Edit mode: drag tiles to rearrange them or move them to another group. Click a tile to change its name, path or look. Launching is paused.</p>
+<section id="net" class="net net-only" hidden aria-label="Network">
+  <div class="net-head">
+    <h2>Network</h2>
+    <span id="netAge" class="net-age"></span>
+    <span class="grow"></span>
+    <button type="button" id="netRefresh" class="btn">Refresh</button>
+    <button type="button" id="netHide" class="btn" title="Hide the network panel (the Network button brings it back)">Hide</button>
+  </div>
+  <div id="netList" class="net-list"></div>
+</section>
 <main id="board"></main>
 <div id="ctx" class="ctx" role="menu" hidden>
   <button type="button" role="menuitem" data-act="open">Open</button>

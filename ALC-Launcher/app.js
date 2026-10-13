@@ -83,6 +83,7 @@ async function init() {
   document.documentElement.dataset.theme = state.theme;
   setLook(state.ui || 'modern');
   $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
+  if (window.api.netInfo) showNet(state.netOpen !== false);   // open by default
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
   await render();
   intro = false;
@@ -272,6 +273,97 @@ document.addEventListener('mousedown', e => { if (menuFor && !$('ctx').contains(
 window.addEventListener('scroll', () => { if (menuFor) closeMenu(); }, true);   // any scrolling area
 window.addEventListener('resize', () => { if (menuFor) closeMenu(); });
 window.addEventListener('blur', e => { if (menuFor && e.target === window) closeMenu(); });   // the window itself, not items inside it
+
+// Network panel (desktop app only): a card per network adapter with its IP addresses, subnet, gateway, DNS,
+// DHCP/static, MAC and speed. A cheap check runs every 2 s; the full details are fetched from Windows when
+// that check sees a change, or every 15 s, so plugging in a cable or changing an IP shows up within seconds.
+if (!window.api.netInfo) document.body.classList.add('no-net');
+let netSig = null, netAt = 0, netJson = '', netIps = {};
+const maskOf = p => [0, 8, 16, 24].map(s => p - s >= 8 ? 255 : p - s <= 0 ? 0 : 256 - 2 ** (8 - (p - s))).join('.');
+const isWifi = a => /wi-?fi|wireless|wlan|802\.11/i.test(a.name + ' ' + a.desc);
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); }
+  catch { const x = document.createElement('textarea'); x.value = t; document.body.appendChild(x); x.select(); document.execCommand('copy'); x.remove(); }
+  say('Copied ' + t);
+}
+function showNet(open) {
+  state.netOpen = open; save();
+  $('net').hidden = !open;
+  $('netBtn').classList.toggle('on', open);
+  if (open) netPoll(true);
+}
+async function netPoll(force) {
+  if (!window.api.netInfo || $('net').hidden || document.hidden) return;
+  const sig = await window.api.netQuick();
+  if (!force && sig === netSig && Date.now() - netAt < 15000) return;
+  netSig = sig; netAt = Date.now();
+  if (!netJson) $('netAge').textContent = 'Checking...';
+  const list = await window.api.netInfo();
+  netAt = Date.now();
+  if (!list) { $('netAge').textContent = 'Could not read the network adapters'; return; }
+  const json = JSON.stringify(list);
+  if (json !== netJson) { netJson = json; drawNet(list); }
+  netAge();
+}
+function netAge() {
+  if (!netJson || $('net').hidden) return;
+  const s = Math.round((Date.now() - netAt) / 1000);
+  $('netAge').textContent = s < 3 ? 'Live, updated just now' : 'Live, updated ' + s + ' s ago';
+}
+function drawNet(list) {
+  // physical adapters (minus "Not Present" ghosts of removed hardware), plus virtual ones such as a VPN only while connected
+  const shown = list.filter(a => a.status !== 'Not Present' && (a.hardware || a.status === 'Up'))
+    .sort((a, b) => (b.status === 'Up') - (a.status === 'Up') || isWifi(a) - isWifi(b) || a.name.localeCompare(b.name));
+  const box = $('netList'); box.innerHTML = '';
+  if (!shown.length) { box.innerHTML = '<p class="net-empty">No network adapters found.</p>'; return; }
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const seen = {};
+  for (const a of shown) {
+    const up = a.status === 'Up', ips = [].concat(a.ips || []), dns = [].concat(a.dns || []).filter(Boolean), gws = [].concat(a.gateways || []).filter(Boolean);
+    const card = el('article', 'nic ' + (up ? 'up' : 'down'));
+    const head = el('div', 'nic-h');
+    head.append(el('span', 'nic-dot'), el('span', 'nic-name', a.name));
+    if (up && a.dhcp) head.append(el('span', 'nic-tag ' + (a.dhcp === 'Enabled' ? 'dhcp' : 'static'), a.dhcp === 'Enabled' ? 'DHCP' : 'Static'));
+    card.append(head);
+    const stateText = up ? 'Connected' : a.status === 'Disconnected' ? (isWifi(a) ? 'Not connected' : 'Cable unplugged') : a.status;
+    card.append(el('div', 'nic-state', stateText + (up && a.speed && a.speed !== '0 bps' ? ' \u00b7 ' + a.speed : '')));
+    if (up) {
+      if (!ips.length) card.append(el('div', 'nic-warn', 'No IPv4 address'));
+      for (const x of ips) {
+        const row = el('div', 'nic-ip');
+        const ip = el('button', 'nic-addr', x.ip); ip.type = 'button'; ip.title = 'Copy ' + x.ip; ip.onclick = () => copyText(x.ip);
+        row.append(ip, el('span', 'nic-mask', maskOf(x.prefix) + '  /' + x.prefix));
+        card.append(row);
+        if (x.state === 'Duplicate') card.append(el('div', 'nic-warn', 'IP conflict: another device on this network is using ' + x.ip));
+        else if (/^169\.254\./.test(x.ip)) card.append(el('div', 'nic-warn', 'Self-assigned address: no DHCP server answered. Set a static IP or check the cable/network.'));
+      }
+      const kv = el('dl', 'nic-kv');
+      const add = (k, v) => { if (v) kv.append(el('dt', '', k), el('dd', '', v)); };
+      add('Gateway', gws.join(', ') || 'None');
+      add('DNS', dns.join(', ') || 'None');
+      add('MAC', a.mac);
+      card.append(kv);
+    } else if (a.mac) {
+      const kv = el('dl', 'nic-kv'); kv.append(el('dt', '', 'MAC'), el('dd', '', a.mac)); card.append(kv);
+    }
+    const ch = el('button', 'btn nic-change', 'Change IP'); ch.type = 'button';
+    ch.title = 'Open the Windows settings for ' + a.name;
+    ch.onclick = () => window.api.launch('C:\\Windows\\explorer.exe', isWifi(a) ? 'ms-settings:network-wifi' : 'ms-settings:network-ethernet');
+    card.append(ch);
+    // briefly highlight a card whose addresses changed since the last look
+    const now = ips.map(x => x.ip + '/' + x.prefix).join(',') + '|' + a.status;
+    if (netIps[a.name] != null && netIps[a.name] !== now) card.classList.add('changed');
+    seen[a.name] = now;
+    box.append(card);
+  }
+  netIps = seen;
+}
+$('netBtn').onclick = () => showNet($('net').hidden);
+$('netHide').onclick = () => showNet(false);
+$('netRefresh').onclick = () => { netSig = null; netPoll(true); };
+setInterval(netPoll, 2000);
+setInterval(netAge, 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) netPoll(true); });
 
 let draft = [], draftIcon = '';
 function openEditor(id) {

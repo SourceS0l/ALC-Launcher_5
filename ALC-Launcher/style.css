@@ -209,3 +209,35 @@ body.no-admin .admin-only{display:none !important}
 .shield{position:absolute;top:8px;right:26px;width:15px;height:15px;fill:#3b8eea}
 label.check{flex-direction:row;align-items:center;gap:8px;color:var(--text)}
 label.check input{width:auto;margin:0}
+
+/* Network panel (desktop app only) */
+body.no-net .net-only{display:none !important}
+.net{padding:10px 16px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
+.net[hidden]{display:none}
+.net-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.net-head h2{margin:0;font-size:13px;font-weight:600;color:var(--dim)}
+.net-age{font-size:12px;color:var(--dim)}
+.net-head .btn{padding:5px 10px;font-size:12.5px}
+.net-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.net-empty{margin:0;color:var(--dim)}
+.nic{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.nic.down{opacity:.75}
+.nic-h{display:flex;align-items:center;gap:8px}
+.nic-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+.nic.down .nic-dot{background:var(--dim)}
+.nic-name{font-weight:600}
+.nic-tag{margin-left:auto;padding:2px 8px;border-radius:9px;font-size:11px;font-weight:700;letter-spacing:.03em}
+.nic-tag.dhcp{background:rgba(76,195,232,.15);color:var(--accent)}
+.nic-tag.static{background:rgba(242,180,65,.16);color:var(--warn)}
+.nic-state{font-size:12px;color:var(--dim)}
+.nic-ip{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.nic-addr{padding:0;border:0;background:none;color:var(--text);font:600 19px/1.25 ui-monospace,"Cascadia Mono",Consolas,monospace;cursor:copy}
+.nic-addr:hover{color:var(--accent)}
+.nic-mask{font:12px ui-monospace,"Cascadia Mono",Consolas,monospace;color:var(--dim)}
+.nic-warn{padding:6px 8px;border-radius:6px;background:rgba(239,107,107,.14);color:var(--danger);font-size:12px;line-height:1.4}
+.nic-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:2px 0 0;font-size:12px}
+.nic-kv dt{color:var(--dim)}
+.nic-kv dd{margin:0;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;overflow-wrap:anywhere}
+.nic-change{align-self:flex-start;margin-top:4px;padding:5px 10px;font-size:12.5px}
+.nic.changed{animation:nic-flash 1.6s ease-out}
+@keyframes nic-flash{0%,30%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 2px transparent}}

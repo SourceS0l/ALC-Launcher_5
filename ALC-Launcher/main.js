@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
+const os = require('os');
 
 // Safe mode: turns off graphics acceleration. Use it if the app opens a blank window or closes
 // right away (seen on some virtual machines and ARM PCs). Add  --safe  to the end of the shortcut's Target.
@@ -121,6 +122,38 @@ ipcMain.handle('launchAdmin', (e, p, args) => new Promise(resolve => {
   ps.on('error', x => resolve(String(x)));
   ps.on('close', code => resolve(code === 0 ? '' : /cancel/i.test(out) ? 'CANCELLED' : (out.trim() || 'PowerShell exit code ' + code)));
 }));
+
+// Live network info for the Network panel.
+// netQuick: a cheap fingerprint of the current IPv4 addresses (Node reads them instantly), polled every
+// couple of seconds so changes show up quickly. netInfo: the full picture from PowerShell (adapter state,
+// DHCP/static, gateway, DNS, speed, IP conflicts), fetched when the fingerprint changes or every few seconds.
+ipcMain.handle('netQuick', () => Object.entries(os.networkInterfaces())
+  .map(([n, list]) => n + '=' + list.filter(a => a.family === 'IPv4').map(a => a.address + '/' + a.netmask).join(',')).join(';'));
+const NET_PS = `$ProgressPreference = 'SilentlyContinue'
+$ips = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)
+$routes = @(Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue)
+$dns = @(Get-DnsClientServerAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue)
+$ifs = @(Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue)
+$list = foreach ($a in @(Get-NetAdapter -ErrorAction SilentlyContinue)) {
+  $i = $a.ifIndex
+  [pscustomobject]@{
+    name = $a.Name; desc = $a.InterfaceDescription; status = "$($a.Status)"; speed = "$($a.LinkSpeed)"
+    mac = $a.MacAddress; hardware = [bool]$a.HardwareInterface
+    dhcp = "$(($ifs | Where-Object ifIndex -eq $i | Select-Object -First 1).Dhcp)"
+    ips = @($ips | Where-Object ifIndex -eq $i | ForEach-Object { [pscustomobject]@{ ip = $_.IPAddress; prefix = [int]$_.PrefixLength; origin = "$($_.PrefixOrigin)"; state = "$($_.AddressState)" } })
+    gateways = @($routes | Where-Object ifIndex -eq $i | ForEach-Object { $_.NextHop })
+    dns = @(($dns | Where-Object InterfaceIndex -eq $i).ServerAddresses)
+  }
+}
+ConvertTo-Json -InputObject @($list) -Depth 4 -Compress`;
+let netBusy = null;   // one PowerShell at a time; callers in the meantime share its answer
+ipcMain.handle('netInfo', () => netBusy || (netBusy = new Promise(resolve => {
+  let out = '';
+  const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(NET_PS, 'utf16le').toString('base64')], { windowsHide: true });
+  ps.stdout.on('data', d => { out += d; });
+  ps.on('error', () => resolve(null));
+  ps.on('close', () => { try { resolve([].concat(JSON.parse(out))); } catch { resolve(null); } });
+}).finally(() => { netBusy = null; })));
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({

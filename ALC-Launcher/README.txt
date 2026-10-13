@@ -132,3 +132,12 @@ Change IP (Ethernet)
   click Edit, choose Manual, turn on IPv4, and enter the IP address, subnet mask and gateway.
 - Any Windows settings link works as a tool path, e.g. ms-settings:network-wifi or ms-settings:network
   (the desktop app hands these to Windows to open).
+
+Network panel (desktop app)
+- Shows each network adapter: connected / cable unplugged, DHCP or Static, every IPv4 address with its subnet
+  mask, gateway, DNS, MAC and speed. Click an IP address to copy it. "Change IP" opens the Windows settings
+  page for that adapter (Ethernet or Wi-Fi).
+- Live: changes (cable plugged in, new IP) show up within a few seconds, and the changed card flashes.
+- Warns about an IP conflict (another device using your address) and a self-assigned 169.254.x.x address
+  (no DHCP server answered).
+- The "Network" button at the top shows or hides the panel; the choice is remembered.

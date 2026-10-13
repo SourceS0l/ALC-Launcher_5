@@ -130,6 +130,28 @@ html[data-ui="modern"] .ctx hr{border-top-color:var(--line)}
 html[data-ui="modern"] .shield{top:10px;right:28px}
 html[data-ui="modern"] label.check{color:var(--text);font-weight:500;font-size:12.5px}
 
+/* Network panel */
+html[data-ui="modern"] .net{margin:14px 22px 0;padding:14px 16px 16px;border:1px solid var(--line);border-radius:var(--r-xl);background:linear-gradient(180deg,var(--surface-2),var(--surface));box-shadow:var(--shadow)}
+html[data-ui="modern"] .net-head h2{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.09em;color:var(--dim)}
+html[data-ui="modern"] .net-age{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--faint)}
+html[data-ui="modern"] .net-age::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent);animation:net-pulse 2s ease-in-out infinite}
+html[data-ui="modern"] .net-head .btn{height:28px;padding:0 10px;font-size:12px}
+html[data-ui="modern"] .net-list{grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+html[data-ui="modern"] .nic{padding:14px;gap:7px;border-radius:var(--r-lg);background:var(--panel);border-color:var(--line)}
+html[data-ui="modern"] .nic-dot{width:8px;height:8px;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+html[data-ui="modern"] .nic.down .nic-dot{background:var(--faint);box-shadow:none}
+html[data-ui="modern"] .nic-name{font-size:13.5px}
+html[data-ui="modern"] .nic-tag{border:1px solid transparent}
+html[data-ui="modern"] .nic-tag.dhcp{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+html[data-ui="modern"] .nic-tag.static{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,transparent)}
+html[data-ui="modern"] .nic-addr{font-size:20px;letter-spacing:-.01em}
+html[data-ui="modern"] .nic-addr:hover{color:var(--accent)}
+html[data-ui="modern"] .nic-warn{border:1px solid color-mix(in srgb,var(--danger) 35%,transparent);background:color-mix(in srgb,var(--danger) 12%,transparent);border-radius:var(--r-sm)}
+html[data-ui="modern"] .nic-kv dt{color:var(--faint)}
+html[data-ui="modern"] .nic-change{height:30px;padding:0 12px;font-size:12px}
+@keyframes net-pulse{50%{opacity:.35}}
+@media (max-width:720px){html[data-ui="modern"] .net{margin:12px 14px 0}}
+
 /* ---------- Banners ---------- */
 html[data-ui="modern"] #update{
   margin:14px 22px 0;padding:10px 10px 10px 16px;border-radius:var(--r-lg);gap:10px;
