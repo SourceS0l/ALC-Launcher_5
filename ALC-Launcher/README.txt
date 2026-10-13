@@ -93,3 +93,6 @@ Desktop app download (for users)
 - Browsers cannot start programs, so the web version offers "Get desktop app". It downloads the newest
   ALC-Launcher-Windows.zip: extract it, open the folder, double-click ALC Launcher.exe. No Node.js needed.
 - Windows may say it protected your PC (the app is not code-signed): click More info > Run anyway.
+
+Full screen
+- The desktop app opens full screen. Press F11 to switch to a normal window and back. Alt+F4 closes it.

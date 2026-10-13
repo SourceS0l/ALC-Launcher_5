@@ -1,4 +1,4 @@
 {
-  "build": 12,
-  "notes": "Desktop app download added - opens programs with one click"
+  "build": 13,
+  "notes": "Desktop app now opens full screen (F11 to switch)"
 }

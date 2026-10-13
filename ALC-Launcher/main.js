@@ -58,8 +58,12 @@ ipcMain.handle('launch', async (e, p, args) => {
 app.whenReady().then(() => {
   const win = new BrowserWindow({
     width: 660, height: 820, minWidth: 420, minHeight: 480,
+    fullscreen: true,   // opens full screen; F11 switches between full screen and a normal window
     autoHideMenuBar: true, backgroundColor: '#0f1923', title: 'ALC Launcher', icon: path.join(__dirname, 'icon.ico'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
+  });
+  win.webContents.on('before-input-event', (e, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') { e.preventDefault(); win.setFullScreen(!win.isFullScreen()); }
   });
   win.loadFile('index.html');
 });
