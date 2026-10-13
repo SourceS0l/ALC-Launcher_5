@@ -1,6 +1,6 @@
 {
-  "build": 20,
-  "notes": "The cat now walks by as soon as the app opens; removed the version menu at the top",
+  "build": 21,
+  "notes": "New Change IP (Ethernet) tile opens Windows Settings to change your IP address",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

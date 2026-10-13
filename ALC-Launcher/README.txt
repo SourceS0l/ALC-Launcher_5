@@ -123,3 +123,9 @@ The cat
   other). Most visits it stops partway to groom itself, then walks off the other side. Clicks pass through it.
 - "Cat: on / Cat: off" at the bottom right turns it on or off for that person.
 - Timings are at the top of cat.js (EVERY, CROSS, GROOM_CHANCE, GROOM_TIME).
+
+Change IP (Ethernet)
+- Opens Windows Settings > Network & internet > Ethernet. Click your adapter, then next to "IP assignment"
+  click Edit, choose Manual, turn on IPv4, and enter the IP address, subnet mask and gateway.
+- Any Windows settings link works as a tool path, e.g. ms-settings:network-wifi or ms-settings:network
+  (the desktop app hands these to Windows to open).

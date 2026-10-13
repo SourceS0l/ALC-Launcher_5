@@ -17,7 +17,9 @@ const DEFAULTS = [
 // (and not again if someone deletes them).
 const ADDED = [
   { id: 'ipconfig', name: 'IP Config', abbr: 'ip', color: '#2f7d4f', cat: 'Apps',   // shows this PC's IP address
-    versions: [{ label: 'Default', path: 'C:\\Windows\\System32\\cmd.exe' }], active: 'Default', args: '/c start "IP Config" cmd /k ipconfig' }   // start opens a new Command Prompt window
+    versions: [{ label: 'Default', path: 'C:\\Windows\\System32\\cmd.exe' }], active: 'Default', args: '/c start "IP Config" cmd /k ipconfig' },   // start opens a new Command Prompt window
+  { id: 'ethernet', name: 'Change IP (Ethernet)', abbr: 'net', color: '#2d6fb7', cat: 'Apps',   // Settings > Ethernet: adapter > IP assignment > Edit
+    versions: [{ label: 'Default', path: 'ms-settings:network-ethernet' }], active: 'Default', args: '' }
 ];
 DEFAULTS.push(...ADDED);
 
@@ -50,6 +52,9 @@ function startSplash() {
 }
 const $ = id => document.getElementById(id);
 const save = () => window.api.save(state);
+// Windows links such as ms-settings:network-ethernet (a Settings page) are not files: the desktop app
+// counts them as found and hands them to Windows (explorer.exe) to open. The browser opens them itself.
+const isWinLink = p => !window.api.web && /^[a-z][a-z0-9+.-]+:/i.test(p) && !/^[a-z]:[\\/]/i.test(p) && !/^https?:/i.test(p);
 const getVer = t => t.versions.find(v => v.label === t.active) || t.versions[0];
 const allLabels = () => [...new Set(state.tools.flatMap(t => t.versions.map(v => v.label)))];
 const say = t => { $('status').textContent = t; };
@@ -61,7 +66,9 @@ async function init() {
   state.added = state.added || [];   // ids from ADDED this settings file has already been given
   for (const t of ADDED) {
     if (state.added.includes(t.id)) continue;
-    if (!state.tools.some(x => x.id === t.id)) state.tools.push(JSON.parse(JSON.stringify(t)));
+    const have = state.tools.some(x => x.id === t.id ||   // or they already made one with the same path themselves
+      (x.versions || []).some(v => (v.path || '').toLowerCase() === t.versions[0].path.toLowerCase()));
+    if (!have) state.tools.push(JSON.parse(JSON.stringify(t)));
     state.added.push(t.id); save();
   }
   // Built-in tools that were dropped from the list. Removed from saved settings too, but only the
@@ -105,8 +112,8 @@ async function render() {
 
 async function makeTile(t) {
   const v = getVer(t);
-  const ok = await window.api.exists(v.path);
-  const icon = ok && !/^https?:/i.test(v.path) ? await window.api.icon(v.path) : null;
+  const ok = isWinLink(v.path) || await window.api.exists(v.path);
+  const icon = ok && !/^https?:/i.test(v.path) && !isWinLink(v.path) ? await window.api.icon(v.path) : null;
   const b = document.createElement('div');
   b.className = 'tile'; b.tabIndex = 0; b.dataset.id = t.id; b.style.setProperty('--c', t.color);
   if (intro) { b.classList.add('enter'); b.style.setProperty('--i', tileIdx++); } b.setAttribute('role', 'button');
@@ -207,7 +214,8 @@ function refreshLabels() {
 
 async function launch(t) {
   say('Opening ' + t.name + '...');
-  const err = await window.api.launch(getVer(t).path, t.args);
+  const p = getVer(t).path;
+  const err = isWinLink(p) ? await window.api.launch('C:\\Windows\\explorer.exe', p) : await window.api.launch(p, t.args);
   if (err === 'COPIED' || err === 'COPY_FAILED') {
     say(err === 'COPIED' ? 'Path of ' + t.name + ' copied.' : 'Path: ' + getVer(t).path);
     return showDesktop(err === 'COPIED' ? 'For now, the path of ' + t.name + ' was copied, so you can paste it into Win+R.' : '');
