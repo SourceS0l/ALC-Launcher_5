@@ -1,8 +1,8 @@
 {
-  "build": 18,
-  "notes": "Brand-new modern look (switch back any time with Classic look at the bottom)",
+  "build": 19,
+  "notes": "A little cat now visits every couple of minutes (Cat: on/off at the bottom)",
   "files": [
-    "index.html", "style.css", "modern.css", "app.js", "web-api.js", "manifest.webmanifest", "version.json",
+    "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
     "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"
   ]

@@ -118,3 +118,9 @@ Look: modern or classic
 - The code from before the redesign is saved in git under the tag "ui-classic"
   (git checkout ui-classic -- ALC-Launcher  restores those files exactly).
 - Ctrl+K (or /) jumps to the search box.
+
+The cat
+- Every 2 minutes a small cat walks along the top of the status bar (about 30 seconds from one side to the
+  other). Most visits it stops partway to groom itself, then walks off the other side. Clicks pass through it.
+- "Cat: on / Cat: off" at the bottom right turns it on or off for that person.
+- Timings are at the top of cat.js (EVERY, CROSS, GROOM_CHANCE, GROOM_TIME).

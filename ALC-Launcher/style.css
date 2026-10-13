@@ -140,7 +140,7 @@ footer{padding-bottom:max(10px,env(safe-area-inset-bottom));padding-left:max(16p
 #update[hidden]{display:none}
 #updMsg{flex:1;min-width:200px}
 .foot-r{display:flex;gap:10px;align-items:center}
-#checkBtn,#uiBtn{padding:5px 10px;font-size:12.5px}
+#checkBtn,#uiBtn,#catBtn{padding:5px 10px;font-size:12.5px}
 .vers .tip{margin:0 0 8px;background:var(--panel-hi);border-left:3px solid var(--accent);padding:8px 10px;border-radius:6px}
 a.btn{text-decoration:none;display:inline-block}
 body.web #deskBtn.web-only{display:inline-block}
@@ -158,3 +158,36 @@ body.web #deskBtn.web-only{display:inline-block}
 /* Pieces used only by the modern look (modern.css); hidden in the classic look */
 .m-only{display:none}
 .search,.ghead{display:contents}
+
+/* The wandering cat (cat.js). Clicks pass through it. */
+#cat{position:fixed;left:0;bottom:0;z-index:4;width:68px;pointer-events:none;opacity:0;transition:opacity .4s;will-change:transform}
+#cat.show{opacity:1}
+#cat svg{display:block;width:100%;overflow:visible;filter:drop-shadow(0 3px 3px rgba(0,0,0,.25))}
+#cat.flip svg{transform:scaleX(-1)}
+#cat .cat-line{stroke:#3b2c25;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+#cat .cat-tail .cat-line{fill:none}
+#cat .cat-leg{fill:#fbf4ea;stroke:#3b2c25;stroke-width:2;transform-box:fill-box;transform-origin:50% 12%}
+#cat .cat-leg.far{fill:#e6d9c8}
+#cat .cat-tail{transform-box:fill-box;transform-origin:95% 95%;animation:cat-tail 1.8s ease-in-out infinite alternate}
+#cat .cat-head{transform-box:view-box;transform-origin:72px 54px;transition:transform .35s}
+#cat .cat-body,#cat .cat-head{transition:transform .35s}
+#cat .cat-eyes{transform-box:fill-box;transform-origin:50% 55%;animation:cat-blink 4.6s infinite}
+#cat .cat-shut{display:none}
+
+/* Walking: diagonal leg pairs swing in turn, the body bobs */
+#cat.walk .cat-leg.a{animation:cat-step .42s ease-in-out infinite alternate}
+#cat.walk .cat-leg.b{animation:cat-step .42s ease-in-out infinite alternate-reverse}
+#cat.walk .cat-body,#cat.walk .cat-head{animation:cat-bob .21s ease-in-out infinite alternate}
+
+/* Grooming: eyes shut happily, front paw comes up, head bobs as it licks */
+#cat.groom .cat-eyes{display:none}
+#cat.groom .cat-shut{display:inline}
+#cat.groom .cat-leg.front{transform:rotate(-115deg);transition:transform .35s}
+#cat.groom .cat-head{animation:cat-lick .38s ease-in-out .35s infinite alternate;transform:rotate(17deg)}
+#cat.groom .cat-tail{animation-duration:3.2s}
+
+@keyframes cat-step{from{transform:rotate(-20deg)}to{transform:rotate(20deg)}}
+@keyframes cat-bob{from{transform:translateY(0)}to{transform:translateY(-1.4px)}}
+@keyframes cat-tail{from{transform:rotate(-9deg)}to{transform:rotate(11deg)}}
+@keyframes cat-blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes cat-lick{from{transform:rotate(14deg)}to{transform:rotate(21deg)}}

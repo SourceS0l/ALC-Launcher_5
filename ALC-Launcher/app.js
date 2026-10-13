@@ -75,6 +75,7 @@ async function init() {
   });
   document.documentElement.dataset.theme = state.theme;
   setLook(state.ui || 'modern');
+  $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
   await render();
   intro = false;
@@ -348,6 +349,11 @@ function setLook(ui) {
   document.documentElement.dataset.ui = ui;
   $('uiBtn').textContent = ui === 'modern' ? 'Classic look' : 'Modern look';
 }
+$('catBtn').onclick = () => {
+  state.cat = state.cat === false;   // flips on <-> off (on is the default)
+  $('catBtn').textContent = state.cat ? 'Cat: on' : 'Cat: off'; save();
+  say(state.cat ? 'The cat will visit every couple of minutes' : 'The cat will stay away');
+};
 $('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
