@@ -74,6 +74,7 @@ async function init() {
     if (!t.versions) { t.versions = [{ label: 'Default', path: t.path || '' }]; t.active = 'Default'; delete t.path; }
   });
   document.documentElement.dataset.theme = state.theme;
+  setLook(state.ui || 'modern');
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
   await render();
   intro = false;
@@ -92,7 +93,7 @@ async function render() {
     shown += items.length;
     const g = document.createElement('section');
     g.className = 'group';
-    g.innerHTML = `<h2>${cat}</h2><div class="grid"></div>`;
+    g.innerHTML = `<div class="ghead"><h2>${cat}</h2><span class="count m-only">${items.length}</span></div><div class="grid"></div>`;
     board.appendChild(g);
     if (editMode) dropZone(g.lastChild, cat);
     for (const t of items) g.lastChild.appendChild(await makeTile(t));
@@ -106,7 +107,7 @@ async function makeTile(t) {
   const ok = await window.api.exists(v.path);
   const icon = ok && !/^https?:/i.test(v.path) ? await window.api.icon(v.path) : null;
   const b = document.createElement('div');
-  b.className = 'tile'; b.tabIndex = 0; b.dataset.id = t.id;
+  b.className = 'tile'; b.tabIndex = 0; b.dataset.id = t.id; b.style.setProperty('--c', t.color);
   if (intro) { b.classList.add('enter'); b.style.setProperty('--i', tileIdx++); } b.setAttribute('role', 'button');
   b.title = v.path || 'No path set';
   const badge = document.createElement('span');
@@ -121,6 +122,12 @@ async function makeTile(t) {
   dot.className = 'dot' + (ok ? '' : ' warn');
   dot.title = ok ? (window.api.web ? 'Path set' : 'Found') : (v.path ? 'File not found at this path' : 'Path not set');
   b.append(dot, badge, name);
+  if (!ok) {   // modern look: say what is wrong under the name
+    const sub = document.createElement('span');
+    sub.className = 'sub m-only'; sub.textContent = v.path ? 'File not found' : 'Set up path';
+    b.appendChild(sub);
+  }
+  b.insertAdjacentHTML('beforeend', '<svg class="m-only ic go" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>');
   if (t.versions.length > 1) {
     const sel = document.createElement('select');
     sel.className = 'ver'; sel.setAttribute('aria-label', t.name + ' version');
@@ -318,7 +325,7 @@ $('form').onsubmit = () => {
 $('editBtn').onclick = () => {
   editMode = !editMode;
   $('editBtn').classList.toggle('on', editMode);
-  $('editBtn').textContent = editMode ? 'Done' : 'Edit';
+  $('editBtn').querySelector('.lbl').textContent = editMode ? 'Done' : 'Edit';
   $('hint').hidden = !editMode;
   render();
 };
@@ -328,6 +335,20 @@ $('themeBtn').onclick = () => {
   document.documentElement.dataset.theme = state.theme; save();
 };
 $('search').oninput = render;
+// Ctrl+K (or /) jumps to the search box
+window.addEventListener('keydown', e => {
+  if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))) {
+    e.preventDefault(); $('search').focus(); $('search').select();
+  }
+  if (e.key === 'Escape' && document.activeElement === $('search') && $('search').value) { $('search').value = ''; render(); }
+});
+// Modern or classic look (modern.css only applies while <html data-ui="modern">)
+function setLook(ui) {
+  state.ui = ui;
+  document.documentElement.dataset.ui = ui;
+  $('uiBtn').textContent = ui === 'modern' ? 'Classic look' : 'Modern look';
+}
+$('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
 // comes back into view. "Later" hides it until an even newer build is published.

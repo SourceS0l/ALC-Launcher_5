@@ -109,3 +109,12 @@ IP Config
   current network (look for "IPv4 Address"). It runs C:\Windows\System32\cmd.exe with the launch arguments
   /c start "IP Config" cmd /k ipconfig  (desktop app only; the browser version can only copy the path).
 - To run another command the same way, add a tool with that path and arguments, replacing "ipconfig".
+
+Look: modern or classic
+- The app uses the modern look by default. Click "Classic look" at the bottom right to switch back to the
+  original design (and "Modern look" to return). The choice is saved per person.
+- The modern design lives entirely in modern.css; style.css is the original design. Deleting the
+  <link ... modern.css> line in index.html removes the modern look for everyone.
+- The code from before the redesign is saved in git under the tag "ui-classic"
+  (git checkout ui-classic -- ALC-Launcher  restores those files exactly).
+- Ctrl+K (or /) jumps to the search box.
