@@ -1,6 +1,6 @@
 {
-  "build": 26,
-  "notes": "New OptiFlex Service Port tile opens http://169.254.1.1 in your browser",
+  "build": 27,
+  "notes": "Click the cat! It jumps away, and runs off after 4 clicks",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

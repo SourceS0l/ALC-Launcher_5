@@ -160,6 +160,8 @@ body.web #deskBtn.web-only{display:inline-block}
 
 /* The wandering cat (cat.js). Clicks pass through it. */
 #cat{position:fixed;left:0;bottom:0;z-index:4;width:68px;pointer-events:none;opacity:0;transition:opacity .4s;will-change:transform}
+/* While on screen only the cat's drawn shape takes clicks, so the empty box around it never blocks a tile */
+#cat.show :is(path,rect,ellipse,circle){pointer-events:visiblePainted;cursor:pointer}
 #cat.show{opacity:1}
 #cat svg{display:block;width:100%;overflow:visible;filter:drop-shadow(0 3px 3px rgba(0,0,0,.25))}
 #cat.flip svg{transform:scaleX(-1)}
@@ -172,6 +174,7 @@ body.web #deskBtn.web-only{display:inline-block}
 #cat .cat-body,#cat .cat-head{transition:transform .35s}
 #cat .cat-eyes{transform-box:fill-box;transform-origin:50% 55%;animation:cat-blink 4.6s infinite}
 #cat .cat-shut{display:none}
+#cat .cat-eek{display:none}
 
 /* Walking: diagonal leg pairs swing in turn, the body bobs */
 #cat.walk .cat-leg.a{animation:cat-step .42s ease-in-out infinite alternate}
@@ -265,3 +268,15 @@ body.no-net .net-only{display:none !important}
 .ipmode label{white-space:nowrap}
 .ipmode input:focus{outline:none}
 .ipmode label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
+
+/* Startled: leaps with legs stretched out, tail up, eyes squeezed shut (> <); the 4th click makes it run */
+#cat.jump .cat-eyes,#cat.run .cat-eyes{display:none}
+#cat.jump .cat-eek,#cat.run .cat-eek{display:inline}
+#cat.jump .cat-leg.far.a,#cat.jump .cat-leg.near.b{transform:rotate(38deg);transition:transform .12s}
+#cat.jump .cat-leg.far.b,#cat.jump .cat-leg.near.a{transform:rotate(-42deg);transition:transform .12s}
+#cat.jump .cat-tail{animation:none;transform:rotate(-22deg);transition:transform .15s}
+#cat.jump .cat-head{transform:rotate(-6deg)}
+#cat.run .cat-leg.a{animation:cat-step .16s ease-in-out infinite alternate}
+#cat.run .cat-leg.b{animation:cat-step .16s ease-in-out infinite alternate-reverse}
+#cat.run .cat-body,#cat.run .cat-head{animation:cat-bob .08s ease-in-out infinite alternate}
+#cat.run .cat-tail{animation:none;transform:rotate(-30deg)}

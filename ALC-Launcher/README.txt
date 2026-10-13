@@ -123,7 +123,9 @@ Look: modern or classic
 
 The cat
 - Right after the app opens, and then every 2 minutes, a small cat walks along the top of the status bar (about 30 seconds from one side to the
-  other). Most visits it stops partway to groom itself, then walks off the other side. Clicks pass through it.
+  other). Most visits it stops partway to groom itself, then walks off the other side.
+- Click the cat and it leaps away from the pointer (eyes squeezed shut). On the 4th click it lands and runs off,
+  and the 2-minute wait starts again from then. Only the cat itself is clickable, never the space around it.
 - "Cat: on / Cat: off" at the bottom right turns it on or off for that person.
 - Timings are at the top of cat.js (EVERY, CROSS, GROOM_CHANCE, GROOM_TIME).
 
