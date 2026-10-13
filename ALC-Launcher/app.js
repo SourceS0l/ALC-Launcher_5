@@ -302,7 +302,7 @@ async function netPoll(force) {
   netAt = Date.now();
   if (!list) { $('netAge').textContent = 'Could not read the network adapters'; return; }
   const json = JSON.stringify(list);
-  if (json !== netJson) { netJson = json; drawNet(list); }
+  if (json !== netJson && !netEditing) { netJson = json; drawNet(list); }   // never redraw under an open IP form
   netAge();
 }
 function netAge() {
@@ -346,10 +346,18 @@ function drawNet(list) {
     } else if (a.mac) {
       const kv = el('dl', 'nic-kv'); kv.append(el('dt', '', 'MAC'), el('dd', '', a.mac)); card.append(kv);
     }
-    const ch = el('button', 'btn nic-change', 'Change IP'); ch.type = 'button';
-    ch.title = 'Open the Windows settings for ' + a.name;
+    const acts = el('div', 'nic-acts');
+    if (window.api.setIp && a.index) {
+      const ed = el('button', 'btn primary nic-change', 'Edit IP'); ed.type = 'button';
+      ed.title = 'Set a static IP or switch back to DHCP for ' + a.name;
+      ed.onclick = () => editIp(card, a, ips, gws, dns);
+      acts.append(ed);
+    }
+    const ch = el('button', 'btn nic-change', 'Windows settings'); ch.type = 'button';
+    ch.title = 'Open the Windows settings page for ' + a.name;
     ch.onclick = () => window.api.launch('C:\\Windows\\explorer.exe', isWifi(a) ? 'ms-settings:network-wifi' : 'ms-settings:network-ethernet');
-    card.append(ch);
+    acts.append(ch);
+    card.append(acts);
     // briefly highlight a card whose addresses changed since the last look
     const now = ips.map(x => x.ip + '/' + x.prefix).join(',') + '|' + a.status;
     if (netIps[a.name] != null && netIps[a.name] !== now) card.classList.add('changed');
@@ -358,6 +366,84 @@ function drawNet(list) {
   }
   netIps = seen;
 }
+// Edit IP form inside an adapter card: DHCP or static IP, subnet mask, gateway, DNS. Checked here first,
+// then main.js applies it with netsh as administrator (Windows asks for permission).
+let netEditing = false;
+const ipNum = s => s.split('.').reduce((n, o) => n * 256 + +o, 0);
+const validIp = s => /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(s);
+function parseMask(s) {   // "255.255.255.0", "24" or "/24" -> prefix length, or null
+  s = s.trim().replace(/^\//, '');
+  if (/^\d{1,2}$/.test(s)) return +s >= 1 && +s <= 32 ? +s : null;
+  if (!validIp(s)) return null;
+  const bits = ipNum(s).toString(2).padStart(32, '0');
+  return /^1+0*$/.test(bits) ? bits.indexOf('0') < 0 ? 32 : bits.indexOf('0') : null;
+}
+function editIp(card, a, ips, gws, dns) {
+  if (card.querySelector('.ipform')) return;
+  netEditing = true;
+  const cur = ips.find(x => !/^169\.254\./.test(x.ip)) || {};
+  const f = document.createElement('form');
+  f.className = 'ipform';
+  f.innerHTML = `
+    <div class="ipmode" role="radiogroup" aria-label="How this adapter gets its address">
+      <label><input type="radio" name="mode" value="dhcp"> Automatic (DHCP)</label>
+      <label><input type="radio" name="mode" value="static"> Static</label>
+    </div>
+    <div class="ipfields">
+      <label>IP address <input name="ip" placeholder="192.168.168.10" inputmode="decimal" autocomplete="off"></label>
+      <label>Subnet mask <input name="mask" placeholder="255.255.255.0 or 24" autocomplete="off"></label>
+      <label>Gateway (optional) <input name="gw" placeholder="192.168.168.1" inputmode="decimal" autocomplete="off"></label>
+      <label>DNS 1 (optional) <input name="dns1" inputmode="decimal" autocomplete="off"></label>
+      <label>DNS 2 (optional) <input name="dns2" inputmode="decimal" autocomplete="off"></label>
+    </div>
+    <p class="iperr" hidden></p>
+    <div class="nic-acts">
+      <button type="submit" class="btn primary">Apply</button>
+      <button type="button" class="btn" data-cancel>Cancel</button>
+    </div>
+    <p class="note">Windows asks for administrator permission to change the address.</p>`;
+  const F = n => f.elements[n];
+  F('mode').value = a.dhcp === 'Enabled' ? 'dhcp' : 'static';
+  F('ip').value = cur.ip || ''; F('mask').value = cur.prefix ? maskOf(cur.prefix) : '';
+  F('gw').value = gws[0] || ''; F('dns1').value = dns[0] || ''; F('dns2').value = dns[1] || '';
+  const sync = () => { f.classList.toggle('dhcp', F('mode').value === 'dhcp'); };
+  f.querySelectorAll('[name=mode]').forEach(r => { r.onchange = sync; }); sync();
+  const err = f.querySelector('.iperr');
+  const fail = (m, field) => { err.textContent = m; err.hidden = false; if (field) F(field).focus(); return false; };
+  const close = () => { f.remove(); card.querySelector('.nic-acts').hidden = false; netEditing = false; netJson = ''; netPoll(true); };
+  f.querySelector('[data-cancel]').onclick = close;
+  f.onkeydown = e => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  f.onsubmit = async e => {
+    e.preventDefault(); err.hidden = true;
+    const dhcp = F('mode').value === 'dhcp';
+    const cfg = { index: a.index, dhcp };
+    if (!dhcp) {
+      const ip = F('ip').value.trim(), prefix = parseMask(F('mask').value), gw = F('gw').value.trim();
+      const d = [F('dns1').value.trim(), F('dns2').value.trim()].filter(Boolean);
+      if (!validIp(ip)) return fail('Enter an IP address like 192.168.168.10.', 'ip');
+      if (prefix == null) return fail('Enter a subnet mask like 255.255.255.0, or 24.', 'mask');
+      const m = prefix ? (0xFFFFFFFF << (32 - prefix)) >>> 0 : 0, net = (ipNum(ip) & m) >>> 0, bc = (net | ~m) >>> 0;
+      if (prefix < 31 && (ipNum(ip) === net || ipNum(ip) === bc)) return fail(ip + ' is the ' + (ipNum(ip) === net ? 'network' : 'broadcast') + ' address of that subnet; pick another.', 'ip');
+      if (gw && !validIp(gw)) return fail('The gateway is not a valid address.', 'gw');
+      if (gw && ((ipNum(gw) & m) >>> 0) !== net) return fail('Gateway ' + gw + ' is not on the same network as ' + ip + ' with mask ' + maskOf(prefix) + '.', 'gw');
+      if (gw && gw === ip) return fail('The gateway cannot be this computer\'s own address.', 'gw');
+      const badDns = d.find(x => !validIp(x)); if (badDns) return fail('DNS ' + badDns + ' is not a valid address.', d.indexOf(badDns) ? 'dns2' : 'dns1');
+      Object.assign(cfg, { ip, mask: maskOf(prefix), gateway: gw, dns: d });
+    }
+    const btn = f.querySelector('[type=submit]');
+    btn.disabled = true; btn.textContent = 'Waiting for Windows...';
+    say('Changing ' + a.name + '... approve the Windows permission prompt');
+    const r = await window.api.setIp(cfg);
+    btn.disabled = false; btn.textContent = 'Apply';
+    if (!r.ok) { say(r.cancelled ? 'Nothing changed: the permission prompt was cancelled' : 'Could not change ' + a.name); return fail(r.msg || 'netsh reported an error.'); }
+    say(dhcp ? a.name + ' is now set to automatic (DHCP)' : a.name + ' is now ' + cfg.ip + ' / ' + cfg.mask + (cfg.gateway ? ', gateway ' + cfg.gateway : ''));
+    close();
+  };
+  card.querySelector('.nic-acts').hidden = true;
+  card.append(f);
+  (F('mode').value === 'static' ? F('ip') : f.querySelector('[name=mode]:checked')).focus();
+}
+
 $('netBtn').onclick = () => showNet($('net').hidden);
 $('netHide').onclick = () => showNet(false);
 $('netRefresh').onclick = () => { netSig = null; netPoll(true); };

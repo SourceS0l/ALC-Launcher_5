@@ -45,6 +45,7 @@
   <button id="updLater" class="btn">Later</button>
 </div>
 <p id="hint" hidden>Edit mode: drag tiles to rearrange them or move them to another group. Click a tile to change its name, path or look. Launching is paused.</p>
+<div class="scroller">   <!-- the network panel and the tiles scroll together under the top bar -->
 <section id="net" class="net net-only" hidden aria-label="Network">
   <div class="net-head">
     <h2>Network</h2>
@@ -56,6 +57,7 @@
   <div id="netList" class="net-list"></div>
 </section>
 <main id="board"></main>
+</div>
 <div id="ctx" class="ctx" role="menu" hidden>
   <button type="button" role="menuitem" data-act="open">Open</button>
   <button type="button" role="menuitem" data-act="admin" class="admin-only"><svg class="uac" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5.3 3.4 9.4 8 11 4.6-1.6 8-5.7 8-11V5z"/></svg>Run as administrator</button>

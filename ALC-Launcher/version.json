@@ -1,6 +1,6 @@
 {
-  "build": 24,
-  "notes": "New live Network panel: see your IP, subnet, gateway, DNS and DHCP/static at a glance",
+  "build": 25,
+  "notes": "Edit IP: set a static IP, subnet and gateway (or DHCP) right from the Network panel",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

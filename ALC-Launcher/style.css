@@ -241,3 +241,27 @@ body.no-net .net-only{display:none !important}
 .nic-change{align-self:flex-start;margin-top:4px;padding:5px 10px;font-size:12.5px}
 .nic.changed{animation:nic-flash 1.6s ease-out}
 @keyframes nic-flash{0%,30%{box-shadow:0 0 0 2px var(--accent)}100%{box-shadow:0 0 0 2px transparent}}
+.nic-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.nic-acts[hidden]{display:none}
+.nic-acts .nic-change{margin-top:0}
+/* Edit IP form inside an adapter card */
+.ipform{display:flex;flex-direction:column;gap:8px;margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+.ipmode{display:flex;gap:6px}
+.ipmode label{flex:1;flex-direction:row;align-items:center;justify-content:center;gap:6px;margin:0;padding:7px 8px;border:1px solid var(--line);border-radius:8px;color:var(--text);cursor:pointer;font-size:12.5px}
+.ipmode label:has(input:checked){border-color:var(--accent);background:var(--panel-hi)}
+.ipmode input{width:auto;margin:0}
+.ipfields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ipfields label{margin:0;font-size:12px}
+.ipfields label:first-child{grid-column:1 / -1}
+.ipfields input{padding:6px 8px;font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+.ipform.dhcp .ipfields{display:none}
+.iperr{margin:0;padding:7px 9px;border-radius:6px;background:rgba(239,107,107,.14);color:var(--danger);font-size:12px;line-height:1.4}
+.iperr[hidden]{display:none}
+.ipform .note{margin:0;font-size:11.5px;color:var(--dim)}
+.ipform .btn{padding:5px 12px;font-size:12.5px}
+/* The network panel and the tiles share one scrolling area below the top bar */
+.scroller{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+.scroller > main{flex:none;overflow:visible}
+.ipmode label{white-space:nowrap}
+.ipmode input:focus{outline:none}
+.ipmode label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}

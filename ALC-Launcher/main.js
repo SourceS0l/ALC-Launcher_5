@@ -137,7 +137,7 @@ $ifs = @(Get-NetIPInterface -AddressFamily IPv4 -ErrorAction SilentlyContinue)
 $list = foreach ($a in @(Get-NetAdapter -ErrorAction SilentlyContinue)) {
   $i = $a.ifIndex
   [pscustomobject]@{
-    name = $a.Name; desc = $a.InterfaceDescription; status = "$($a.Status)"; speed = "$($a.LinkSpeed)"
+    index = $i; name = $a.Name; desc = $a.InterfaceDescription; status = "$($a.Status)"; speed = "$($a.LinkSpeed)"
     mac = $a.MacAddress; hardware = [bool]$a.HardwareInterface
     dhcp = "$(($ifs | Where-Object ifIndex -eq $i | Select-Object -First 1).Dhcp)"
     ips = @($ips | Where-Object ifIndex -eq $i | ForEach-Object { [pscustomobject]@{ ip = $_.IPAddress; prefix = [int]$_.PrefixLength; origin = "$($_.PrefixOrigin)"; state = "$($_.AddressState)" } })
@@ -154,6 +154,46 @@ ipcMain.handle('netInfo', () => netBusy || (netBusy = new Promise(resolve => {
   ps.on('error', () => resolve(null));
   ps.on('close', () => { try { resolve([].concat(JSON.parse(out))); } catch { resolve(null); } });
 }).finally(() => { netBusy = null; })));
+
+// Change an adapter's IPv4 settings from the Network panel. netsh does the work, run as administrator: the
+// Windows permission prompt appears, the elevated PowerShell writes netsh's output to a temp file, and this
+// reads it back (an elevated process cannot hand its output to us directly). Every value is checked to be a
+// plain IPv4 address and the adapter is given by its number, so nothing typed can reach the command line.
+const isIPv4 = s => typeof s === 'string' && /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(s);
+ipcMain.handle('setIp', (e, cfg = {}) => new Promise(resolve => {
+  cfg = cfg || {};
+  const idx = parseInt(cfg.index, 10), dns = [].concat(cfg.dns || []).filter(Boolean);
+  if (!(idx > 0)) return resolve({ ok: false, msg: 'Unknown network adapter.' });
+  const ni = 'name=' + idx, cmds = [];   // each netsh command as a list of words
+  if (cfg.dhcp) {
+    cmds.push(['interface', 'ipv4', 'set', 'address', ni, 'source=dhcp'], ['interface', 'ipv4', 'set', 'dnsservers', ni, 'source=dhcp']);
+  } else {
+    if (![cfg.ip, cfg.mask].every(isIPv4) || (cfg.gateway && !isIPv4(cfg.gateway)) || !dns.every(isIPv4)) return resolve({ ok: false, msg: 'One of the addresses is not valid.' });
+    cmds.push(['interface', 'ipv4', 'set', 'address', ni, 'source=static', 'address=' + cfg.ip, 'mask=' + cfg.mask, 'gateway=' + (cfg.gateway || 'none')]);
+    cmds.push(dns[0] ? ['interface', 'ipv4', 'set', 'dnsservers', ni, 'source=static', 'address=' + dns[0], 'register=primary', 'validate=no']
+                     : ['interface', 'ipv4', 'set', 'dnsservers', ni, 'source=static', 'address=none']);
+    if (dns[1]) cmds.push(['interface', 'ipv4', 'add', 'dnsservers', ni, 'address=' + dns[1], 'index=2', 'validate=no']);
+  }
+  const log = path.join(os.tmpdir(), 'alc-setip-' + process.pid + '-' + Date.now() + '.txt');
+  const inner = '$out = @(); $code = 0; $cmds = New-Object System.Collections.ArrayList\n' +
+    cmds.map(c => '[void]$cmds.Add(@(' + c.map(psq).join(',') + '))\n').join('') +
+    'foreach ($a in $cmds) {\n' +
+    '  $o = (& netsh.exe @a 2>&1 | Out-String).Trim(); $out += $o; if ($LASTEXITCODE -ne 0 -and $o -notmatch "already enabled") { $code = 1 } }\n' +   // "DHCP is already enabled" = nothing to do
+    'Set-Content -LiteralPath ' + psq(log) + ' -Value ($out -join "`n") -Encoding UTF8\nexit $code';
+  const outer = '$ProgressPreference = "SilentlyContinue"; try { $p = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop ' +
+    '-ArgumentList "-NoProfile","-NonInteractive","-EncodedCommand","' + Buffer.from(inner, 'utf16le').toString('base64') + '"; ' +
+    '[Console]::Out.Write("EXIT:" + $p.ExitCode) } catch { [Console]::Out.Write("ERR:" + $_.Exception.Message) }';
+  let out = '';
+  const ps = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(outer, 'utf16le').toString('base64')], { windowsHide: true });
+  ps.stdout.on('data', d => { out += d; });
+  ps.on('error', x => resolve({ ok: false, msg: String(x) }));
+  ps.on('close', () => {
+    let detail = ''; try { detail = fs.readFileSync(log, 'utf8').replace(/^﻿/, '').trim(); fs.unlinkSync(log); } catch {}
+    if (out.startsWith('EXIT:0')) return resolve({ ok: true, msg: detail });
+    if (out.startsWith('ERR:')) return resolve({ ok: false, cancelled: /cancel/i.test(out), msg: /cancel/i.test(out) ? 'The administrator prompt was cancelled; nothing was changed.' : out.slice(4) });
+    resolve({ ok: false, msg: detail || out || 'netsh did not report a result.' });
+  });
+}));
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({

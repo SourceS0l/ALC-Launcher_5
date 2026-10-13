@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('api', {
   launchAdmin: (p, a) => ipcRenderer.invoke('launchAdmin', p, a),
   netQuick: () => ipcRenderer.invoke('netQuick'),
   netInfo: () => ipcRenderer.invoke('netInfo'),
+  setIp: cfg => ipcRenderer.invoke('setIp', cfg),
   configPath: () => ipcRenderer.invoke('configPath'),
   checkUpdate: () => ipcRenderer.invoke('checkUpdate'),
   applyUpdate: () => ipcRenderer.invoke('applyUpdate')
