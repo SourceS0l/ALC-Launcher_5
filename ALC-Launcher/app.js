@@ -5,14 +5,10 @@ const DEFAULTS = [
   ['WebCTRL Server','W','#3a6ea5','Apps',''], ['Site Builder','sb','#1c1c1c','Apps',''],
   ['EIKON Logic Builder','ek','#4d6b3c','Apps',''], ['View Builder','vb','#1c1c1c','Apps',''],
   ['WebCTRL Design Server','W','#7a5a8c','Apps',''], ['Third-Party BACnet Utility','B','#2b3a4a','Apps',''],
-  ['LONworks Integration Tool','L','#b8442f','Apps',''], ['Equipment Builder','eb','#1c1c1c','Apps',''],
-  ['Field Assistant','fa','#14808a','Apps',''], ['Alarm Notification Client','an','#a02a2a','Apps',''],
-  ['Virtual BACview','bv','#1c1c1c','Apps',''], ['Test + Balance','tb','#6a3d8f','Apps',''],
-  ['Trend Conversion Utility','tc','#c0392b','Apps',''], ['Sensor Builder','S','#1c1c1c','Apps',''],
-  ['Sensor Scan','ss','#1c1c1c','Apps',''], ['PuTTY','P','#2d6fb7','Apps',PF+'PuTTY\\putty.exe'],
+  ['Equipment Builder','eb','#1c1c1c','Apps',''], ['Field Assistant','fa','#14808a','Apps',''],
+  ['PuTTY','P','#2d6fb7','Apps',PF+'PuTTY\\putty.exe'],
   ['Windows Explorer','fx','#c99a2e','Apps','C:\\Windows\\explorer.exe'], ['Wireshark','ws','#1f7aa8','Apps',PF+'Wireshark\\Wireshark.exe'],
-  ['SeriCap','sc','#7b6a1f','Apps',''], ['BBMD Config. Tool','BB','#1c1c1c','Apps',''],
-  ['Internet Explorer','ie','#2a8fd6','Browsers',PF+'Internet Explorer\\iexplore.exe'],
+  ['BBMD Config. Tool','BB','#1c1c1c','Apps',''],
   ['Microsoft Edge','e','#1b8a8f','Browsers',PF86+'Microsoft\\Edge\\Application\\msedge.exe'],
   ['Google Chrome','gc','#d44638','Browsers',PF+'Google\\Chrome\\Application\\chrome.exe'],
   ['Mozilla Firefox','ff','#e66a1f','Browsers',PF+'Mozilla Firefox\\firefox.exe']
@@ -55,6 +51,12 @@ async function init() {
   startSplash();
   const saved = await window.api.load();
   state = saved || { theme: 'dark', tools: DEFAULTS };
+  // Built-in tools that were dropped from the list. Removed from saved settings too, but only the
+  // built-in copies (ids d0, d1...), so a tool someone added back themselves stays.
+  const DROPPED = ['Internet Explorer', 'SeriCap', 'Sensor Scan', 'Sensor Builder', 'Trend Conversion Utility',
+    'Test + Balance', 'Virtual BACview', 'Alarm Notification Client', 'LONworks Integration Tool'].map(n => n.toLowerCase());
+  const kept = state.tools.filter(t => !(/^d\d+$/.test(t.id) && DROPPED.includes(t.name.toLowerCase())));
+  if (kept.length !== state.tools.length) { state.tools = kept; save(); }
   state.tools.forEach(t => {   // upgrade settings saved by the older single-path version
     if (!t.versions) { t.versions = [{ label: 'Default', path: t.path || '' }]; t.active = 'Default'; delete t.path; }
   });
