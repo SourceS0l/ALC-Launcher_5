@@ -20,7 +20,6 @@ To test without building:  npm install  then  npm start
 Versions
 - Edit a tool > "Add version" to list each installed version with its own path (e.g. 8.5, 9.0). Each new row copies the previous path so you only change the version number in it.
 - Tools with more than one version show a dropdown on the tile; pick a version and the tile launches that one.
-- The header dropdown switches every tool that has a matching version label at once, so use the same labels (8.5, 9.0...) across tools.
 - Settings saved by the older version are upgraded automatically. Rebuild with build.bat to get the update into your .exe.
 
 Custom icons
@@ -120,7 +119,7 @@ Look: modern or classic
 - Ctrl+K (or /) jumps to the search box.
 
 The cat
-- Every 2 minutes a small cat walks along the top of the status bar (about 30 seconds from one side to the
+- Right after the app opens, and then every 2 minutes, a small cat walks along the top of the status bar (about 30 seconds from one side to the
   other). Most visits it stops partway to groom itself, then walks off the other side. Clicks pass through it.
 - "Cat: on / Cat: off" at the bottom right turns it on or off for that person.
 - Timings are at the top of cat.js (EVERY, CROSS, GROOM_CHANCE, GROOM_TIME).

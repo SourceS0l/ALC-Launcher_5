@@ -1,6 +1,6 @@
 {
-  "build": 19,
-  "notes": "A little cat now visits every couple of minutes (Cat: on/off at the bottom)",
+  "build": 20,
+  "notes": "The cat now walks by as soon as the app opens; removed the version menu at the top",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

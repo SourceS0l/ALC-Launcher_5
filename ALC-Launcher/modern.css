@@ -70,7 +70,6 @@ html[data-ui="modern"] .search kbd{
   padding:4px 6px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface-2)
 }
 html[data-ui="modern"] #search:focus + kbd{opacity:0}
-html[data-ui="modern"] #verSel{height:36px;width:auto}
 
 /* ---------- Buttons ---------- */
 html[data-ui="modern"] .btn{

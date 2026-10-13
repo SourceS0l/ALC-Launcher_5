@@ -47,7 +47,6 @@ label{display:flex;flex-direction:column;gap:5px;color:var(--dim);font-size:12.5
 input[type=color]{padding:2px;height:37px}
 @media (prefers-reduced-motion:reduce){.tile{transition:none}}
 
-#verSel{width:auto;max-width:150px}
 .ver{width:100%;padding:5px 8px;font-size:12.5px}
 .vers{margin-bottom:12px}
 .vhead{display:block;color:var(--dim);font-size:12.5px;margin-bottom:6px}

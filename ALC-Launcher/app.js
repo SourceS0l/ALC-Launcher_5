@@ -86,7 +86,7 @@ async function render() {
   const board = $('board');
   board.innerHTML = '';
   board.className = editMode ? 'editing' : '';
-  refreshGlobal();
+  refreshLabels();
   let shown = 0;
   for (const cat of CATS) {
     const items = state.tools.filter(t => t.cat === cat && t.name.toLowerCase().includes(q));
@@ -198,23 +198,12 @@ function moveTool(id, cat, nearId, after) {
   save(); render(); say('Moved ' + t.name);
 }
 
-// Header dropdown: switch every tool that has a matching version label in one go.
-function refreshGlobal() {
-  const sel = $('verSel'), labels = allLabels();
-  sel.hidden = labels.length < 2;
-  sel.innerHTML = '';
-  labels.forEach(l => sel.add(new Option('Version: ' + l, l)));
-  const multi = state.tools.filter(t => t.versions.length > 1);
-  const same = labels.find(l => multi.length && multi.every(t => t.active === l || !t.versions.some(x => x.label === l)));
-  if (same) sel.value = same; else { sel.add(new Option('Version: mixed', ''), 0); sel.value = ''; }
+// Version names already in use, offered as suggestions when typing a version name in the editor.
+function refreshLabels() {
+  const labels = allLabels();
   $('labels').innerHTML = '';
   labels.forEach(l => { const o = document.createElement('option'); o.value = l; $('labels').appendChild(o); });
 }
-$('verSel').onchange = e => {
-  const l = e.target.value; if (!l) return;
-  state.tools.forEach(t => { if (t.versions.some(v => v.label === l)) t.active = l; });
-  save(); render(); say('Switched tools to version ' + l);
-};
 
 async function launch(t) {
   say('Opening ' + t.name + '...');

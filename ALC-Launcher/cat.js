@@ -1,5 +1,5 @@
 // A small cat that wanders along the top of the status bar every couple of minutes, sometimes stopping to
-// groom itself. Purely decorative: clicks go straight through it, it stays away while the window is hidden,
+// groom itself (first visit right after the opening animation). Purely decorative: clicks go straight through it, it stays away while the window is hidden,
 // and the "Cat" button in the status bar turns it off (state.cat in app.js). It shows even when Windows
 // animation effects are off, since many work PCs have them off. Run alcCat() in the developer tools to call it now.
 (() => {
@@ -75,6 +75,9 @@
     };
     requestAnimationFrame(frame);
   }
+  // First walk as soon as the opening animation is gone, then every EVERY
+  const first = () => document.getElementById('splash') ? setTimeout(first, 250) : visit();
+  first();
   setInterval(visit, EVERY);
   window.alcCat = visit;
 })();
