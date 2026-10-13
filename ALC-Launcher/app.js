@@ -73,14 +73,16 @@ async function render() {
   let shown = 0;
   for (const cat of CATS) {
     const items = state.tools.filter(t => t.cat === cat && t.name.toLowerCase().includes(q));
-    if (!items.length) continue;
+    if (!items.length && !editMode) continue;   // in Edit mode empty groups stay, so tiles can be dropped in
     shown += items.length;
     const g = document.createElement('section');
     g.className = 'group';
     g.innerHTML = `<h2>${cat}</h2><div class="grid"></div>`;
     board.appendChild(g);
+    if (editMode) dropZone(g.lastChild, cat);
     for (const t of items) g.lastChild.appendChild(await makeTile(t));
   }
+  if (editMode) return;
   if (!shown) board.innerHTML = '<p class="empty">No tools match. Turn on Edit to add one.</p>';
 }
 
@@ -117,7 +119,60 @@ async function makeTile(t) {
   b.onclick = act;
   b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); } };
   b.oncontextmenu = e => { e.preventDefault(); openEditor(t.id); };
+  if (editMode) {
+    b.draggable = true;
+    b.ondragstart = e => { dragId = t.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', t.id); b.classList.add('dragging'); };
+    b.ondragend = () => { dragId = null; b.classList.remove('dragging'); clearMarks(); };
+  }
   return b;
+}
+
+// Edit mode: drag tiles to rearrange them. The dragged tile goes before or after the tile nearest the
+// pointer (whichever side the pointer is on); an empty group just takes it.
+let dragId = null;
+const clearMarks = () => document.querySelectorAll('.drop-before,.drop-after,.drop-into').forEach(x => x.classList.remove('drop-before', 'drop-after', 'drop-into'));
+function dropTarget(grid, e) {
+  let best = null, dist = Infinity;
+  for (const tile of grid.querySelectorAll('.tile')) {
+    const r = tile.getBoundingClientRect();
+    const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2));
+    if (d < dist) { dist = d; best = tile; }
+  }
+  if (!best) return { tile: null };
+  const r = best.getBoundingClientRect();
+  return { tile: best, after: e.clientX > r.left + r.width / 2, self: best.dataset.id === dragId };
+}
+function dropZone(grid, cat) {
+  grid.ondragover = e => {
+    if (!dragId) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    const { tile, after, self } = dropTarget(grid, e);
+    clearMarks();
+    if (self) return;
+    if (tile) tile.classList.add(after ? 'drop-after' : 'drop-before'); else grid.classList.add('drop-into');
+  };
+  grid.ondragleave = e => { if (!grid.contains(e.relatedTarget)) clearMarks(); };
+  grid.ondrop = e => {
+    if (!dragId) return;
+    e.preventDefault();
+    const { tile, after, self } = dropTarget(grid, e);
+    clearMarks();
+    if (!self) moveTool(dragId, cat, tile && tile.dataset.id, after);
+  };
+}
+function moveTool(id, cat, nearId, after) {
+  const from = state.tools.findIndex(t => t.id === id);
+  if (from < 0) return;
+  const [t] = state.tools.splice(from, 1);
+  t.cat = cat;
+  let at = state.tools.findIndex(x => x.id === nearId);
+  if (at < 0) {   // no tile under the pointer: after the last tool of this group (or at the end)
+    const last = state.tools.map(x => x.cat).lastIndexOf(cat);
+    at = last < 0 ? state.tools.length : last + 1;
+  } else if (after) at++;
+  state.tools.splice(at, 0, t);
+  dragId = null;
+  save(); render(); say('Moved ' + t.name);
 }
 
 // Header dropdown: switch every tool that has a matching version label in one go.

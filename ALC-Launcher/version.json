@@ -1,6 +1,6 @@
 {
-  "build": 14,
-  "notes": "Updates now install in seconds with Update now",
+  "build": 15,
+  "notes": "Drag and drop tiles in Edit mode to rearrange them",
   "files": [
     "index.html", "style.css", "app.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

@@ -11,6 +11,8 @@ Using it
 - Click a tile to launch. Amber dot = path not set or file not found. Clicking an amber tile opens the editor.
 - Edit button: change names, paths (Browse), arguments, badge text/color, group; add or delete tools.
 - Right-click any tile to edit it quickly.
+- Rearrange: click Edit, then drag a tile to a new spot, or into another group (Apps, Browsers, Other).
+  Empty groups appear while editing so you can drop tiles into them. Click Done when finished.
 - Settings are saved automatically in your user profile, so rebuilding does not erase them.
 
 To test without building:  npm install  then  npm start

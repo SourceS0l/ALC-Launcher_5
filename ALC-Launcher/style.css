@@ -146,3 +146,11 @@ a.btn{text-decoration:none;display:inline-block}
 body.web #deskBtn.web-only{display:inline-block}
 #deskDlg p,#deskDlg li{line-height:1.45}
 #deskDlg ol{padding-left:20px}
+
+/* Edit mode: drag and drop */
+.editing .tile{cursor:grab}
+.editing .grid{min-height:112px;border-radius:12px;transition:background .15s}
+.tile.dragging{opacity:.4}
+.tile.drop-before{box-shadow:-5px 0 0 -1px var(--accent)}
+.tile.drop-after{box-shadow:5px 0 0 -1px var(--accent)}
+.grid.drop-into{background:var(--panel-hi);outline:2px dashed var(--accent);outline-offset:2px}
