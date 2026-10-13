@@ -59,7 +59,28 @@ const save = () => window.api.save(state);
 const isWinLink = p => !window.api.web && /^[a-z][a-z0-9+.-]+:/i.test(p) && !/^[a-z]:[\\/]/i.test(p) && !/^https?:/i.test(p);
 const getVer = t => t.versions.find(v => v.label === t.active) || t.versions[0];
 const allLabels = () => [...new Set(state.tools.flatMap(t => t.versions.map(v => v.label)))];
-const say = t => { $('status').textContent = t; };
+// Status bar text. With a kind ('ok', 'info', 'warn', 'error') the message also pops up as a notification;
+// without one it is a passing progress message ("Opening...") and stays in the status bar only.
+const say = (t, kind) => { $('status').textContent = t; if (kind) toast(t, kind); };
+const TOAST_ICONS = { ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  warn: '<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/>', error: '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>' };
+function toast(text, kind = 'info') {
+  let box = $('toasts');
+  if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+  const same = [...box.children].find(x => x.dataset.text === text && !x.classList.contains('out'));
+  if (same) { same.remove(); }   // the same message again: move it to the front instead of stacking a copy
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind; el.dataset.text = text; el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+  el.innerHTML = '<svg class="toast-ic" viewBox="0 0 24 24" aria-hidden="true">' + TOAST_ICONS[kind] + '</svg><span class="toast-t"></span><button type="button" class="toast-x" aria-label="Dismiss">×</button>';
+  el.querySelector('.toast-t').textContent = text;
+  const close = () => { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 250); };
+  el.querySelector('.toast-x').onclick = close;
+  let left = kind === 'error' ? 8000 : kind === 'warn' ? 6000 : 4000, since = Date.now(), timer = setTimeout(close, left);
+  el.onmouseenter = () => { clearTimeout(timer); left -= Date.now() - since; };   // hovering keeps it up
+  el.onmouseleave = () => { since = Date.now(); timer = setTimeout(close, Math.max(left, 1500)); };
+  box.appendChild(el);
+  while (box.querySelectorAll('.toast:not(.out)').length > 3) box.querySelector('.toast:not(.out) .toast-x').click();   // at most three
+}
 
 async function init() {
   startSplash();
@@ -210,7 +231,7 @@ function moveTool(id, cat, nearId, after) {
   } else if (after) at++;
   state.tools.splice(at, 0, t);
   dragId = null;
-  save(); render(); say('Moved ' + t.name);
+  save(); render(); say('Moved ' + t.name, 'ok');
 }
 
 // Version names already in use, offered as suggestions when typing a version name in the editor.
@@ -225,16 +246,16 @@ async function launch(t, admin = t.admin) {
   if (admin && window.api.launchAdmin && !isWinLink(p)) {   // settings links have nothing to elevate
     say('Opening ' + t.name + ' as administrator...');
     const err = await window.api.launchAdmin(p, t.args);
-    return say(err === 'CANCELLED' ? t.name + ' was not opened: the administrator prompt was cancelled.'
-      : err ? 'Could not open ' + t.name + ' as administrator: ' + err : 'Opened ' + t.name + ' as administrator');
+    return err === 'CANCELLED' ? say(t.name + ' was not opened: the administrator prompt was cancelled.', 'warn')
+      : err ? say('Could not open ' + t.name + ' as administrator: ' + err, 'error') : say('Opened ' + t.name + ' as administrator', 'ok');
   }
   say('Opening ' + t.name + '...');
   const err = isWinLink(p) ? await window.api.launch('C:\\Windows\\explorer.exe', p) : await window.api.launch(p, t.args);
   if (err === 'COPIED' || err === 'COPY_FAILED') {
-    say(err === 'COPIED' ? 'Path of ' + t.name + ' copied.' : 'Path: ' + getVer(t).path);
+    say(err === 'COPIED' ? 'Path of ' + t.name + ' copied.' : 'Path: ' + getVer(t).path, 'info');
     return showDesktop(err === 'COPIED' ? 'For now, the path of ' + t.name + ' was copied, so you can paste it into Win+R.' : '');
   }
-  say(err ? 'Could not open ' + t.name + ': ' + err : 'Opened ' + t.name);
+  if (err) say('Could not open ' + t.name + ': ' + err, 'error'); else say('Opened ' + t.name, 'ok');
 }
 
 // Right-click menu on a tile: Open, Run as administrator, Always run as administrator, Edit.
@@ -262,7 +283,7 @@ $('ctx').onclick = e => {
   if (b.dataset.act === 'edit') openEditor(t.id);
   if (b.dataset.act === 'always') {
     t.admin = !t.admin; save(); render();
-    say(t.admin ? t.name + ' will always run as administrator' : t.name + ' will run normally');
+    say(t.admin ? t.name + ' will always run as administrator' : t.name + ' will run normally', 'ok');
   }
 };
 $('ctx').onkeydown = e => {   // arrow keys move through the items, Escape closes
@@ -280,13 +301,13 @@ window.addEventListener('blur', e => { if (menuFor && e.target === window) close
 // DHCP/static, MAC and speed. A cheap check runs every 2 s; the full details are fetched from Windows when
 // that check sees a change, or every 15 s, so plugging in a cable or changing an IP shows up within seconds.
 if (!window.api.netInfo) document.body.classList.add('no-net');
-let netSig = null, netAt = 0, netJson = '', netIps = {};
+let netSig = null, netAt = 0, netJson = '', netIps = null, netSelfChange = 0;
 const maskOf = p => [0, 8, 16, 24].map(s => p - s >= 8 ? 255 : p - s <= 0 ? 0 : 256 - 2 ** (8 - (p - s))).join('.');
 const isWifi = a => /wi-?fi|wireless|wlan|802\.11/i.test(a.name + ' ' + a.desc);
 async function copyText(t) {
   try { await navigator.clipboard.writeText(t); }
   catch { const x = document.createElement('textarea'); x.value = t; document.body.appendChild(x); x.select(); document.execCommand('copy'); x.remove(); }
-  say('Copied ' + t);
+  say('Copied ' + t, 'ok');
 }
 function showNet(open) {
   state.netOpen = open; save();
@@ -369,10 +390,23 @@ function drawNet(list) {
     card.append(acts);
     // briefly highlight a card whose addresses changed since the last look
     const now = ips.map(x => x.ip + '/' + x.prefix).join(',') + '|' + a.status;
-    if (netIps[a.name] != null && netIps[a.name] !== now) card.classList.add('changed');
+    const before = netIps && netIps[a.name];
+    if (netIps && before !== now && (before != null || up)) {   // changed, or an adapter newly plugged in
+      card.classList.add('changed');
+      // announce changes made outside the app (cable plugged in, DHCP); our own Edit IP already said so
+      if (Date.now() - netSelfChange > 15000) {
+        const addr = ips.filter(x => x.state !== 'Duplicate').map(x => x.ip).join(', ');
+        const wasUp = before != null && before.endsWith('|Up');
+        if (up && !wasUp) say(a.name + ' connected' + (addr ? ' · ' + addr : ''), 'info');
+        else if (!up && wasUp) say(a.name + ' ' + (isWifi(a) ? 'disconnected' : 'cable unplugged'), 'warn');
+        else if (up) say(a.name + ' is now ' + (addr || 'without an IPv4 address'), 'info');
+      }
+    }
     seen[a.name] = now;
     box.append(card);
   }
+  // adapters that vanished from the list while connected (a USB adapter unplugged)
+  if (netIps && Date.now() - netSelfChange > 15000) for (const [n, v] of Object.entries(netIps)) if (!(n in seen) && v.endsWith('|Up')) say(n + ' removed', 'warn');
   netIps = seen;
 }
 // Edit IP form inside an adapter card: DHCP or static IP, subnet mask, gateway, DNS. Checked here first,
@@ -444,8 +478,9 @@ function editIp(card, a, ips, gws, dns) {
     say('Changing ' + a.name + '... approve the Windows permission prompt');
     const r = await window.api.setIp(cfg);
     btn.disabled = false; btn.textContent = 'Apply';
-    if (!r.ok) { say(r.cancelled ? 'Nothing changed: the permission prompt was cancelled' : 'Could not change ' + a.name); return fail(r.msg || 'netsh reported an error.'); }
-    say(dhcp ? a.name + ' is now set to automatic (DHCP)' : a.name + ' is now ' + cfg.ip + ' / ' + cfg.mask + (cfg.gateway ? ', gateway ' + cfg.gateway : ''));
+    if (!r.ok) { if (r.cancelled) say('Nothing changed: the permission prompt was cancelled', 'warn'); else say('Could not change ' + a.name, 'error'); return fail(r.msg || 'netsh reported an error.'); }
+    netSelfChange = Date.now();   // our own change: the live panel should not announce it a second time
+    say(dhcp ? a.name + ' is now set to automatic (DHCP)' : a.name + ' is now ' + cfg.ip + ' / ' + cfg.mask + (cfg.gateway ? ', gateway ' + cfg.gateway : ''), 'ok');
     close();
   };
   card.querySelector('.nic-acts').hidden = true;
@@ -473,7 +508,7 @@ async function findDevices(a, from) {
   clearInterval(tick);
   if (run !== scanRun) return;   // closed or restarted meanwhile
   again.disabled = false; body.innerHTML = '';
-  if (r.error) { body.append(el('p', 'nic-warn', r.error)); return; }
+  if (r.error) { body.append(el('p', 'nic-warn', r.error)); say(r.error, 'error'); return; }
   // one row per IP address; BACnet devices on IP join the row with the same address
   const rows = new Map();
   for (const h of r.hosts) rows.set(h.ip, { ip: h.ip, mac: h.mac, ms: h.ms, name: h.name, bac: null });
@@ -520,6 +555,8 @@ async function findDevices(a, from) {
       tr.append(el('td', 'mono', '#' + d.instance), el('td', '', d.name || ''), el('td', 'mono', String(d.net)), el('td', 'mono', d.mac), rt, el('td', '', vendor(d)));
     }));
   }
+  const plural2 = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  say('Found ' + plural2(list.length + routed.length, 'device') + ' on ' + a.name + (nBac ? ' (' + nBac + ' BACnet)' : ''), list.length + routed.length ? 'ok' : 'warn');
   if (!list.length && !routed.length) body.append(el('p', 'scan-note', 'Nothing answered. Check the cable and that this computer has an address on the right network.'));
   filter.oninput = () => { const q = filter.value.trim().toLowerCase(); body.querySelectorAll('tbody tr').forEach(tr => { tr.hidden = !!q && !tr.dataset.text.includes(q); }); };
 }
@@ -625,7 +662,7 @@ $('form').onsubmit = () => {
   render().then(() => {
     if (newId) { const el = document.querySelector('[data-id="' + newId + '"]'); if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); newId = null; }
   });
-  say((prev ? 'Saved ' : 'Added ') + name);
+  say((prev ? 'Saved ' : 'Added ') + name, 'ok');
 };
 
 $('editBtn').onclick = () => {
@@ -657,9 +694,9 @@ function setLook(ui) {
 $('catBtn').onclick = () => {
   state.cat = state.cat === false;   // flips on <-> off (on is the default)
   $('catBtn').textContent = state.cat ? 'Cat: on' : 'Cat: off'; save();
-  say(state.cat ? 'The cat will visit every couple of minutes' : 'The cat will stay away');
+  say(state.cat ? 'The cat will visit every couple of minutes' : 'The cat will stay away', 'info');
 };
-$('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look'); };
+$('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look', 'info'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
 // comes back into view. "Later" hides it until an even newer build is published.
@@ -668,12 +705,12 @@ async function checkUpdate(manual) {
   if (!window.api.checkUpdate) return;
   const u = await window.api.checkUpdate();
   if (u.current) $('stamp').textContent = 'Build ' + u.current;
-  if (!u.current || !u.latest) return manual && say('Could not check for updates. Check your internet connection and try again.');
-  if (u.latest <= u.current) return manual && say('You have the latest version (Build ' + u.current + ').');
+  if (!u.current || !u.latest) return manual && say('Could not check for updates. Check your internet connection and try again.', 'error');
+  if (u.latest <= u.current) return manual && say('You have the latest version (Build ' + u.current + ').', 'ok');
   // Desktop only: 'pending' = GitHub is still publishing it, 'quick' = installs in place, 'full' = needs the zip
-  if (u.mode === 'pending') return manual && say('Build ' + u.latest + ' is still being published. Try again in a few minutes.');
+  if (u.mode === 'pending') return manual && say('Build ' + u.latest + ' is still being published. Try again in a few minutes.', 'info');
   if (u.latest <= skipped && !manual) return;
-  if (manual) say('Update available: Build ' + u.latest);
+  if (manual) say('Update available: Build ' + u.latest, 'info');
   updMode = window.api.web ? 'web' : u.mode;
   $('updMsg').textContent = 'Update available: Build ' + u.latest + (u.notes ? ' - ' + u.notes : '') +
     (updMode === 'full' ? '. This one needs a new download: extract the zip and replace your old ALC Launcher folder. Your tools and settings are kept.' : '');
@@ -696,7 +733,7 @@ $('updBtn').onclick = async () => {
   if (updMode !== 'quick') return window.api.applyUpdate();
   $('updBtn').disabled = true; say('Downloading the update...');
   const err = await window.api.applyUpdate();   // on success the window reloads with the new version
-  if (err) { say('Update failed: ' + err + '. Check your internet connection and try again.'); $('updBtn').disabled = false; }
+  if (err) { say('Update failed: ' + err + '. Check your internet connection and try again.', 'error'); $('updBtn').disabled = false; }
 };
 $('checkBtn').onclick = async () => {
   $('checkBtn').disabled = true; say('Checking for updates...');

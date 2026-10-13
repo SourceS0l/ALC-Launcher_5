@@ -159,3 +159,10 @@ Network panel (desktop app)
 OptiFlex Service Port
 - Opens http://169.254.1.1 in the default web browser (the controller's service-port page). Plug the laptop
   into the controller's service port first; the Network panel shows when the link is up.
+
+Notifications
+- Results pop up in the bottom-right corner: green = done, blue = information, amber = warning, red = error.
+  They close by themselves (errors stay longer), stay while the mouse is over them, and x closes one.
+- Besides app actions (program opened, IP copied, settings saved, update checks), they announce network
+  changes made outside the app: a cable plugged in or unplugged, a new address from DHCP, a USB adapter removed.
+- Progress messages ("Opening...") only appear in the status bar at the bottom left.

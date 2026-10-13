@@ -1,6 +1,6 @@
 {
-  "build": 28,
-  "notes": "Find devices: list everything on your network, including BACnet controllers and their names",
+  "build": 29,
+  "notes": "Pop-up notifications for results, errors and network changes",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
