@@ -1,4 +1,9 @@
 {
-  "build": 13,
-  "notes": "Desktop app now opens maximized (F11 for full screen)"
+  "build": 14,
+  "notes": "Updates now install in seconds with Update now",
+  "files": [
+    "index.html", "style.css", "app.js", "web-api.js", "manifest.webmanifest", "version.json",
+    "logo.png", "logo-body.png", "logo-bar.png",
+    "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"
+  ]
 }

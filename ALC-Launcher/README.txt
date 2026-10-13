@@ -85,8 +85,12 @@ Publishing an update (users get a notice)
 - Within a few minutes, anyone using the web version sees a bar saying "Update available" with a
   "Reload to update" button. It checks when the app opens, every 30 minutes, and when the window is reopened.
 - Raising "build" also makes GitHub build the desktop app automatically (about 5 minutes) and publish it as
-  ALC-Launcher-Windows.zip under Releases. Anyone using the desktop .exe sees the update bar with a "Download"
-  button for that zip; they extract it over their old folder. Settings are kept.
+  ALC-Launcher-Windows.zip under Releases. Desktop users then see "Update now": it downloads only the
+  changed program files (a few hundred KB) and reloads in a second. Settings are kept.
+- If you changed main.js, preload.js or package.json (the desktop part), a quick update is not possible;
+  desktop users get a "Download" button for the full zip instead, which they extract over their old folder.
+- If you add a new file the app uses (an image, a script...), add its name to the "files" list in version.json,
+  or quick updates and offline mode will not include it.
 - If you don't raise "build", nobody is notified (web users still get the change the next time they open the app).
 
 Desktop app download (for users)

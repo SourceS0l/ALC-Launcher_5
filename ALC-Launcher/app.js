@@ -261,18 +261,22 @@ $('search').oninput = render;
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
 // comes back into view. "Later" hides it until an even newer build is published.
-let skipped = 0;
+let skipped = 0, updMode = '';
 async function checkUpdate(manual) {
   if (!window.api.checkUpdate) return;
   const u = await window.api.checkUpdate();
   if (u.current) $('stamp').textContent = 'Build ' + u.current;
   if (!u.current || !u.latest) return manual && say('Could not check for updates. Check your internet connection and try again.');
   if (u.latest <= u.current) return manual && say('You have the latest version (Build ' + u.current + ').');
+  // Desktop only: 'pending' = GitHub is still publishing it, 'quick' = installs in place, 'full' = needs the zip
+  if (u.mode === 'pending') return manual && say('Build ' + u.latest + ' is still being published. Try again in a few minutes.');
   if (u.latest <= skipped && !manual) return;
   if (manual) say('Update available: Build ' + u.latest);
+  updMode = window.api.web ? 'web' : u.mode;
   $('updMsg').textContent = 'Update available: Build ' + u.latest + (u.notes ? ' - ' + u.notes : '') +
-    (window.api.web ? '' : '. Download the zip, extract it, and replace your old ALC Launcher folder. Your tools and settings are kept.');
-  $('updBtn').textContent = window.api.web ? 'Reload to update' : 'Download';
+    (updMode === 'full' ? '. This one needs a new download: extract the zip and replace your old ALC Launcher folder. Your tools and settings are kept.' : '');
+  $('updBtn').textContent = { web: 'Reload to update', quick: 'Update now', full: 'Download' }[updMode];
+  $('updBtn').disabled = false;
   $('updLater').onclick = () => { skipped = u.latest; $('update').hidden = true; };
   $('update').hidden = false;
 }
@@ -286,7 +290,12 @@ if (window.api.desktopUrl) {
   $('deskBtn').onclick = e => { e.preventDefault(); showDesktop(); };
   $('deskGet').onclick = () => $('deskDlg').close();
 }
-$('updBtn').onclick = () => window.api.applyUpdate();
+$('updBtn').onclick = async () => {
+  if (updMode !== 'quick') return window.api.applyUpdate();
+  $('updBtn').disabled = true; say('Downloading the update...');
+  const err = await window.api.applyUpdate();   // on success the window reloads with the new version
+  if (err) { say('Update failed: ' + err + '. Check your internet connection and try again.'); $('updBtn').disabled = false; }
+};
 $('checkBtn').onclick = async () => {
   $('checkBtn').disabled = true; say('Checking for updates...');
   await checkUpdate(true);

@@ -1,16 +1,12 @@
 // Keeps the app working offline. Files come from the network first so every launch gets the newest
 // version, and the cached copy is used when the PC is offline or the network is too slow.
 // Requests ending in ?fresh skip the cache entirely (used by the update check).
-const VERSION = 'alc-v2';
-const FILES = [
-  './', 'index.html', 'style.css', 'app.js', 'web-api.js', 'manifest.webmanifest', 'version.json',
-  'logo.png', 'logo-body.png', 'logo-bar.png',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png'
-];
+// The list of files to keep offline is the "files" list in version.json.
+const VERSION = 'alc-v3';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(VERSION)
-    .then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' }))))
+  e.waitUntil(fetch('version.json', { cache: 'reload' }).then(r => r.json())
+    .then(v => caches.open(VERSION).then(c => c.addAll(['./', ...v.files].map(f => new Request(f, { cache: 'reload' })))))
     .then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
