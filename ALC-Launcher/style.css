@@ -280,3 +280,31 @@ body.no-net .net-only{display:none !important}
 #cat.run .cat-leg.b{animation:cat-step .16s ease-in-out infinite alternate-reverse}
 #cat.run .cat-body,#cat.run .cat-head{animation:cat-bob .08s ease-in-out infinite alternate}
 #cat.run .cat-tail{animation:none;transform:rotate(-30deg)}
+/* Find devices results (Network panel) */
+.scan{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.scan[hidden]{display:none}
+.scan-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.scan-head h3{margin:0;font-size:14px}
+.scan-meta{font-size:12px;color:var(--dim);font-family:ui-monospace,"Cascadia Mono",Consolas,monospace}
+.scan-head .btn{padding:5px 10px;font-size:12.5px}
+.scan-body{margin-top:10px}
+.scan-wait{display:flex;align-items:center;gap:10px;padding:14px 4px;color:var(--dim)}
+.spin{width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-sum{margin:0 0 8px;font-size:12.5px;color:var(--dim)}
+.scan-note{margin:0 0 8px;font-size:12px;color:var(--dim)}
+.scan-body .nic-warn{margin:0 0 8px}
+.scan-filter{max-width:360px;margin:0 0 8px;padding:6px 10px}
+.scan-wrap{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:8px}
+.scan-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.scan-table th{position:sticky;top:0;z-index:1;background:var(--panel);text-align:left;font-weight:600;color:var(--dim);padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.scan-table td{padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.scan-table tr:last-child td{border-bottom:0}
+.scan-table tbody tr:hover{background:var(--panel-hi)}
+.scan-table tr[hidden]{display:none}
+.scan-table .mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;white-space:nowrap}
+.scan-ip{font-size:13px}
+.scan-tag{display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(76,195,232,.15);color:var(--accent);font:600 11.5px ui-monospace,"Cascadia Mono",Consolas,monospace}
+.scan-acts{text-align:right;white-space:nowrap}
+.scan-act{padding:3px 10px;font-size:12px}
+.scan-sub{margin:14px 0 8px;font-size:12.5px;color:var(--dim)}

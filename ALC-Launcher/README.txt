@@ -143,6 +143,14 @@ Network panel (desktop app)
 - Warns about an IP conflict (another device using your address) and a self-assigned 169.254.x.x address
   (no DHCP server answered).
 - The "Network" button at the top shows or hides the panel; the choice is remembered.
+- Find devices (on a connected adapter's card): checks every address on that network (ping, plus the ARP
+  table for devices that ignore ping) and sends a BACnet Who-Is on UDP 47808. Lists each device's IP, name,
+  MAC, ping time and BACnet device number / vendor / name; BACnet devices behind routers (MS/TP) are listed
+  with their network and MAC. Open shows that IP in the browser; click an IP to copy it. Networks larger
+  than /22 only get the 256 addresses around this computer swept (BACnet still covers the whole network).
+- The first time, Windows Firewall may ask whether ALC Launcher may use the network: allow it, or BACnet
+  devices that answer by broadcast will not appear. If another BACnet program (e.g. a WebCTRL server)
+  holds UDP 47808 exclusively, BACnet devices cannot be listed and a note says so.
 - Edit IP (on each adapter card): choose Automatic (DHCP) or Static and enter the IP address, subnet mask
   (255.255.255.0, 24 or /24), gateway and DNS (optional). The form checks the values first (valid addresses,
   gateway on the same network, not the network/broadcast address), then Windows asks for administrator

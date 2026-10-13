@@ -4,6 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const crypto = require('crypto');
 const os = require('os');
+const dgram = require('dgram');
 
 // Safe mode: turns off graphics acceleration. Use it if the app opens a blank window or closes
 // right away (seen on some virtual machines and ARM PCs). Add  --safe  to the end of the shortcut's Target.
@@ -194,6 +195,144 @@ ipcMain.handle('setIp', (e, cfg = {}) => new Promise(resolve => {
     resolve({ ok: false, msg: detail || out || 'netsh did not report a result.' });
   });
 }));
+
+// ---------- Find devices (Network panel) ----------
+// Two things run side by side: a ping sweep of the adapter's subnet (one PowerShell, pings in batches, then
+// the ARP table for devices that ignore ping) and BACnet discovery (Who-Is broadcast on UDP 47808, I-Am
+// replies, then a ReadProperty of each device's name).
+const ipToNum = s => s.split('.').reduce((n, o) => n * 256 + +o, 0);
+const numToIp = n => [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
+// Address ranges to sweep, as [first, count]. Networks larger than /22 only get the /24 around our own address;
+// on a 169.254.x.x link 169.254.1.x is added too, where controller service ports usually sit.
+function scanRanges(ip, prefix) {
+  const me = ipToNum(ip), ranges = [];
+  const add = (net, bits) => { const size = 2 ** (32 - bits); ranges.push([net + 1, size - 2]); };
+  if (prefix >= 22 && prefix <= 30) add(Math.floor(me / 2 ** (32 - prefix)) * 2 ** (32 - prefix), prefix);
+  else add(Math.floor(me / 256) * 256, 24);
+  if (/^169\.254\./.test(ip) && Math.floor(me / 256) !== ipToNum('169.254.1.0') / 256) add(ipToNum('169.254.1.0'), 24);
+  return ranges;
+}
+function pingSweep(index, ip, ranges) {
+  const ps = `$ProgressPreference = 'SilentlyContinue'
+$me = '${ip}'
+$ranges = New-Object System.Collections.ArrayList   # added one by one: a single @(@(a,b)) would be flattened
+${ranges.map(r => '[void]$ranges.Add(@(' + r[0] + ',' + r[1] + '))').join('\n')}
+$ips = foreach ($r in $ranges) { for ($k = 0; $k -lt $r[1]; $k++) { $n = [int64]$r[0] + $k
+  '{0}.{1}.{2}.{3}' -f ($n -shr 24), (($n -shr 16) -band 255), (($n -shr 8) -band 255), ($n -band 255) } }
+$ips = @($ips | Where-Object { $_ -ne $me })
+$alive = @{}
+for ($b = 0; $b -lt $ips.Count; $b += 128) {
+  $batch = @($ips[$b..([Math]::Min($b + 127, $ips.Count - 1))])
+  $tasks = @(foreach ($a in $batch) { (New-Object System.Net.NetworkInformation.Ping).SendPingAsync($a, 800) })
+  try { [void][System.Threading.Tasks.Task]::WaitAll($tasks, 3000) } catch {}
+  for ($k = 0; $k -lt $batch.Count; $k++) { $t = $tasks[$k]
+    if ($t.Status -eq 'RanToCompletion' -and $t.Result.Status -eq 'Success') { $alive[$batch[$k]] = [int]$t.Result.RoundtripTime } }
+}
+$want = @{}; foreach ($a in $ips) { $want[$a] = 1 }
+$nb = @{}
+foreach ($n in @(Get-NetNeighbor -AddressFamily IPv4 -InterfaceIndex ${index} -ErrorAction SilentlyContinue)) {
+  $mac = "$($n.LinkLayerAddress)"
+  if ($want[$n.IPAddress] -and $mac -and $mac -notmatch '^(FF-FF-FF-FF-FF-FF|01-00-5E|00-00-00-00-00-00)') { $nb[$n.IPAddress] = @{ mac = $mac; state = "$($n.State)" } } }
+$found = @(foreach ($a in $ips) { $e = $nb[$a]
+  if ($alive.ContainsKey($a) -or ($e -and $e.state -in 'Reachable','Delay','Probe','Permanent')) {
+    [pscustomobject]@{ ip = $a; mac = $(if ($e) { $e.mac } else { '' }); ms = $(if ($alive.ContainsKey($a)) { $alive[$a] } else { $null }); name = '' } } })
+$dns = @(foreach ($f in $found) { [System.Net.Dns]::GetHostEntryAsync($f.ip) })
+try { [void][System.Threading.Tasks.Task]::WaitAll($dns, 1500) } catch {}
+for ($k = 0; $k -lt $found.Count; $k++) { if ($dns[$k].Status -eq 'RanToCompletion' -and $dns[$k].Result.HostName -ne $found[$k].ip) { $found[$k].name = $dns[$k].Result.HostName } }
+ConvertTo-Json -InputObject @($found) -Compress`;
+  return new Promise(resolve => {
+    let out = '';
+    const p = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(ps, 'utf16le').toString('base64')], { windowsHide: true });
+    p.stdout.on('data', d => { out += d; });
+    p.on('error', () => resolve(null));
+    p.on('close', () => { try { resolve([].concat(JSON.parse(out || '[]'))); } catch { resolve(null); } });
+  });
+}
+// BACnet vendor IDs (ASHRAE list) for the brands most often found on site; others show their number.
+const BACNET_VENDORS = { 2: 'Trane', 5: 'Johnson Controls', 7: 'Siemens', 8: 'Delta Controls', 10: 'Schneider Electric', 16: 'Carrier', 17: 'Honeywell', 18: 'Alerton', 24: 'Automated Logic' };
+// Read a BACnet message: where it came from (IP, or network + MAC behind a router) and its APDU.
+function bacnetRead(buf, rinfo) {
+  if (buf.length < 8 || buf[0] !== 0x81) return null;
+  let i = 4, ip = rinfo.address, port = rinfo.port;
+  if (buf[1] === 0x04) { ip = [...buf.slice(4, 8)].join('.'); port = buf.readUInt16BE(8); i = 10; }   // forwarded by a BBMD
+  else if (buf[1] !== 0x0a && buf[1] !== 0x0b) return null;
+  if (buf[i] !== 0x01) return null;
+  const ctl = buf[i + 1]; i += 2;
+  if (ctl & 0x80) return null;   // network-layer message, not for us
+  if (ctl & 0x20) i += 3 + buf[i + 2];
+  let snet = null, sadr = null;
+  if (ctl & 0x08) { snet = buf.readUInt16BE(i); const len = buf[i + 2]; sadr = [...buf.slice(i + 3, i + 3 + len)]; i += 3 + len; }
+  if (ctl & 0x20) i += 1;   // hop count
+  return { ip, port, snet, sadr, apdu: buf.slice(i) };
+}
+// An application-tagged unsigned/enumerated value at pos: returns [value, next position]
+function bacnetUint(a, pos) { const len = a[pos] & 7; let v = 0; for (let k = 1; k <= len; k++) v = v * 256 + a[pos + k]; return [v, pos + 1 + len]; }
+function bacnetDiscover(broadcast) {
+  return new Promise(resolve => {
+    const devs = new Map(), byInvoke = new Map();
+    let sock, finished = false;
+    const done = error => { if (finished) return; finished = true; try { sock.close(); } catch {} resolve({ devices: [...devs.values()], error }); };
+    try { sock = dgram.createSocket({ type: 'udp4', reuseAddr: true }); } catch (e) { return resolve({ devices: [], error: e.message }); }
+    sock.on('error', e => done(e.code === 'EADDRINUSE' || e.code === 'EACCES' ? 'UDP port 47808 is held by another BACnet program, so BACnet devices could not be listed.' : e.message));
+    sock.on('message', (buf, rinfo) => {
+      const m = bacnetRead(buf, rinfo); if (!m) return;
+      const a = m.apdu;
+      if (a[0] === 0x10 && a[1] === 0x00 && a[2] === 0xc4) {   // I-Am
+        const obj = a.readUInt32BE(3), instance = obj & 0x3fffff;
+        let pos = 7, maxApdu, seg, vendor;
+        [maxApdu, pos] = bacnetUint(a, pos); [seg, pos] = bacnetUint(a, pos); [vendor, pos] = bacnetUint(a, pos);
+        if (!devs.has(instance)) devs.set(instance, { instance, ip: m.ip, port: m.port, net: m.snet, mac: m.sadr ? m.sadr.map(b => b.toString(16).padStart(2, '0')).join(':') : '', sadr: m.sadr, vendorId: vendor, vendor: BACNET_VENDORS[vendor] || '', name: '' });
+      } else if ((a[0] & 0xf0) === 0x30 && a[2] === 0x0c && byInvoke.has(a[1])) {   // ReadProperty answer
+        // object id (context tag 0), property id (context tag 1), optional array index (2), then the value in tags 3
+        const d = byInvoke.get(a[1]);
+        let pos = 3;
+        if (a[pos] !== 0x0c) return; pos += 5;
+        if ((a[pos] & 0xf8) !== 0x18) return; pos += 1 + (a[pos] & 7);
+        if ((a[pos] & 0xf8) === 0x28) pos += 1 + (a[pos] & 7);
+        if (a[pos] !== 0x3e || (a[pos + 1] >> 4) !== 7) return;   // opening tag 3, then a character string
+        pos++;
+        let len = a[pos] & 7; pos++;
+        if (len === 5) { len = a[pos]; pos++; if (len === 254) { len = a.readUInt16BE(pos); pos += 2; } }
+        const charset = a[pos], raw = a.slice(pos + 1, pos + len);
+        d.name = charset === 4 ? Buffer.from(raw).swap16().toString('utf16le') : raw.toString(charset === 0 ? 'utf8' : 'latin1');
+      }
+    });
+    sock.bind({ port: 47808, exclusive: false }, () => {
+      sock.setBroadcast(true);
+      // Who-Is to every network (DNET 0xFFFF), so devices behind BACnet routers answer too
+      const whoIs = Buffer.from([0x81, 0x0b, 0x00, 0x0c, 0x01, 0x20, 0xff, 0xff, 0x00, 0xff, 0x10, 0x08]);
+      sock.send(whoIs, 47808, broadcast);
+      setTimeout(() => {
+        // ask each device for its name (property 77 of its device object), a little apart so MS/TP links keep up
+        const list = [...devs.values()].slice(0, 255);
+        list.forEach((d, n) => setTimeout(() => {
+          if (finished) return;
+          byInvoke.set(n, d);
+          const npdu = d.net != null ? [0x01, 0x24, d.net >> 8, d.net & 255, d.sadr.length, ...d.sadr, 0xff] : [0x01, 0x04];
+          const obj = (8 << 22 | d.instance) >>> 0;
+          const apdu = [0x00, 0x05, n, 0x0c, 0x0c, obj >>> 24, (obj >>> 16) & 255, (obj >>> 8) & 255, obj & 255, 0x19, 0x4d];
+          const len = 4 + npdu.length + apdu.length;
+          try { sock.send(Buffer.from([0x81, 0x0a, len >> 8, len & 255, ...npdu, ...apdu]), d.port, d.ip); } catch {}
+        }, n * 25));
+        setTimeout(() => done(null), list.length * 25 + 2500);
+      }, 3000);
+    });
+  });
+}
+ipcMain.handle('scan', async (e, cfg = {}) => {
+  cfg = cfg || {};
+  const idx = parseInt(cfg.index, 10), prefix = parseInt(cfg.prefix, 10);
+  if (!(idx > 0) || !isIPv4(cfg.ip) || !(prefix >= 1 && prefix <= 30)) return { error: 'This adapter has no usable IPv4 address to scan from.' };
+  const t0 = Date.now(), ranges = scanRanges(cfg.ip, prefix);
+  const mask = prefix ? (0xffffffff << (32 - prefix)) >>> 0 : 0, broadcast = numToIp((ipToNum(cfg.ip) & mask | ~mask) >>> 0);
+  const [hosts, bacnet] = await Promise.all([pingSweep(idx, cfg.ip, ranges), bacnetDiscover(broadcast)]);
+  return {
+    hosts: hosts || [], hostsError: hosts ? '' : 'The address sweep failed.',
+    bacnet: bacnet.devices.map(({ sadr, ...d }) => d), bacnetError: bacnet.error || '',
+    ranges: ranges.map(([first, count]) => numToIp(first) + ' - ' + numToIp(first + count - 1)),
+    limited: prefix < 22, count: ranges.reduce((n, r) => n + r[1], 0), seconds: (Date.now() - t0) / 1000
+  };
+});
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({

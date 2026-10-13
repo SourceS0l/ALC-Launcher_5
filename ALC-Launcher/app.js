@@ -355,6 +355,13 @@ function drawNet(list) {
       ed.onclick = () => editIp(card, a, ips, gws, dns);
       acts.append(ed);
     }
+    const scanFrom = ips.find(x => x.state !== 'Duplicate' && x.prefix <= 30) || null;
+    if (up && window.api.scan && scanFrom) {
+      const fd = el('button', 'btn nic-change', 'Find devices'); fd.type = 'button';
+      fd.title = 'List the devices and BACnet controllers on ' + a.name + "'s network";
+      fd.onclick = () => findDevices(a, scanFrom);
+      acts.append(fd);
+    }
     const ch = el('button', 'btn nic-change', 'Windows settings'); ch.type = 'button';
     ch.title = 'Open the Windows settings page for ' + a.name;
     ch.onclick = () => window.api.launch('C:\\Windows\\explorer.exe', isWifi(a) ? 'ms-settings:network-wifi' : 'ms-settings:network-ethernet');
@@ -444,6 +451,77 @@ function editIp(card, a, ips, gws, dns) {
   card.querySelector('.nic-acts').hidden = true;
   card.append(f);
   (F('mode').value === 'static' ? F('ip') : f.querySelector('[name=mode]:checked')).focus();
+}
+
+// Find devices: sweep the adapter's subnet and ask for BACnet devices (main.js 'scan'), then list them.
+let scanRun = 0;
+async function findDevices(a, from) {
+  const box = $('scanBox'), run = ++scanRun, t0 = Date.now();
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  box.hidden = false; box.innerHTML = '';
+  const head = el('div', 'scan-head');
+  head.append(el('h3', '', 'Devices on ' + a.name), el('span', 'scan-meta', 'from ' + from.ip + ' /' + from.prefix), el('span', 'grow'));
+  const again = el('button', 'btn', 'Scan again'); again.type = 'button'; again.disabled = true; again.onclick = () => findDevices(a, from);
+  const close = el('button', 'btn', 'Close'); close.type = 'button'; close.onclick = () => { scanRun++; box.hidden = true; box.innerHTML = ''; };
+  head.append(again, close);
+  const body = el('div', 'scan-body');
+  const wait = el('div', 'scan-wait'); wait.append(el('span', 'spin'), el('span', 'scan-wait-t', 'Checking every address and asking for BACnet devices...'));
+  body.append(wait); box.append(head, body);
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  const tick = setInterval(() => { wait.lastChild.textContent = 'Checking every address and asking for BACnet devices... ' + Math.round((Date.now() - t0) / 1000) + ' s'; }, 1000);
+  const r = await window.api.scan({ index: a.index, ip: from.ip, prefix: from.prefix });
+  clearInterval(tick);
+  if (run !== scanRun) return;   // closed or restarted meanwhile
+  again.disabled = false; body.innerHTML = '';
+  if (r.error) { body.append(el('p', 'nic-warn', r.error)); return; }
+  // one row per IP address; BACnet devices on IP join the row with the same address
+  const rows = new Map();
+  for (const h of r.hosts) rows.set(h.ip, { ip: h.ip, mac: h.mac, ms: h.ms, name: h.name, bac: null });
+  const routed = [];
+  for (const d of r.bacnet) {
+    if (d.net != null) { routed.push(d); continue; }
+    const row = rows.get(d.ip) || { ip: d.ip, mac: '', ms: null, name: '', bac: null };
+    row.bac = d; rows.set(d.ip, row);
+  }
+  const list = [...rows.values()].sort((x, y) => ipNum(x.ip) - ipNum(y.ip));
+  const nBac = r.bacnet.length;
+  const sum = el('p', 'scan-sum');
+  const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+  sum.textContent = plural(list.length, 'device') + ' on the network' + (routed.length ? ' + ' + routed.length + ' behind routers' : '') +
+    ' · ' + plural(nBac, 'BACnet device') + ' · ' + r.count + ' addresses checked (' + r.ranges.join(', ') + ') in ' + r.seconds.toFixed(1) + ' s';
+  body.append(sum);
+  if (r.limited) body.append(el('p', 'scan-note', 'This network is large, so only the 256 addresses around this computer were checked. BACnet discovery still covered the whole network.'));
+  if (r.hostsError) body.append(el('p', 'nic-warn', r.hostsError));
+  if (r.bacnetError) body.append(el('p', 'nic-warn', r.bacnetError));
+  else if (!nBac) body.append(el('p', 'scan-note', 'No BACnet devices answered. If Windows asked whether ALC Launcher may use the network, it has to be allowed, or BACnet replies are blocked.'));
+  const filter = el('input', 'scan-filter'); filter.type = 'search'; filter.placeholder = 'Filter by IP, name, MAC, vendor or device number';
+  if (list.length + routed.length >= 6) body.append(filter);
+  const vendor = d => d.vendor || 'vendor ' + d.vendorId;
+  const table = (cols, items, fill) => {
+    const t = el('table', 'scan-table'), tr = el('tr');
+    cols.forEach(c => tr.append(el('th', '', c)));
+    const thead = el('thead'); thead.append(tr); t.append(thead);
+    const tb = el('tbody'); items.forEach(it => { const row = el('tr'); fill(row, it); row.dataset.text = row.textContent.toLowerCase(); tb.append(row); }); t.append(tb);
+    const wrap = el('div', 'scan-wrap'); wrap.append(t); return wrap;
+  };
+  const btn = (text, title, fn) => { const b = el('button', 'btn scan-act', text); b.type = 'button'; b.title = title; b.onclick = fn; return b; };
+  if (list.length) body.append(table(['IP address', 'Name', 'BACnet', 'MAC address', 'Ping', ''], list, (tr, x) => {
+    const ipc = el('td', 'mono'); const ipb = el('button', 'nic-addr scan-ip', x.ip); ipb.type = 'button'; ipb.title = 'Copy ' + x.ip; ipb.onclick = () => copyText(x.ip); ipc.append(ipb);
+    const bac = el('td');
+    if (x.bac) { bac.append(el('span', 'scan-tag', '#' + x.bac.instance), document.createTextNode(' ' + vendor(x.bac))); }
+    const act = el('td', 'scan-acts');
+    act.append(btn('Open', 'Open http://' + x.ip + ' in the web browser', () => window.api.launch('http://' + x.ip)));
+    tr.append(ipc, el('td', '', (x.bac && x.bac.name) || x.name || ''), bac, el('td', 'mono', x.mac || ''), el('td', 'mono', x.ms != null ? x.ms + ' ms' : 'no reply'), act);
+  }));
+  if (routed.length) {
+    body.append(el('h4', 'scan-sub', 'BACnet devices behind routers (MS/TP and other networks)'));
+    body.append(table(['Device', 'Name', 'Network', 'MAC', 'Through router', 'Vendor'], routed.sort((x, y) => x.net - y.net || x.instance - y.instance), (tr, d) => {
+      const rt = el('td', 'mono'); const rb = el('button', 'nic-addr scan-ip', d.ip); rb.type = 'button'; rb.title = 'Copy ' + d.ip; rb.onclick = () => copyText(d.ip); rt.append(rb);
+      tr.append(el('td', 'mono', '#' + d.instance), el('td', '', d.name || ''), el('td', 'mono', String(d.net)), el('td', 'mono', d.mac), rt, el('td', '', vendor(d)));
+    }));
+  }
+  if (!list.length && !routed.length) body.append(el('p', 'scan-note', 'Nothing answered. Check the cable and that this computer has an address on the right network.'));
+  filter.oninput = () => { const q = filter.value.trim().toLowerCase(); body.querySelectorAll('tbody tr').forEach(tr => { tr.hidden = !!q && !tr.dataset.text.includes(q); }); };
 }
 
 $('netBtn').onclick = () => showNet($('net').hidden);
