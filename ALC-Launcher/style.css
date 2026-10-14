@@ -264,8 +264,9 @@ body.no-net .net-only{display:none !important}
 .ipform .note{margin:0;font-size:11.5px;color:var(--dim)}
 .ipform .btn{padding:5px 12px;font-size:12.5px}
 /* The network panel and the tiles share one scrolling area below the top bar */
-.scroller{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
-.scroller > main{flex:none;overflow:visible}
+.scroller{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start}
+.content{display:flex;flex-direction:column;min-width:0}
+.content > main{flex:none;overflow:visible}
 .ipmode label{white-space:nowrap}
 .ipmode input:focus{outline:none}
 .ipmode label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:1px}

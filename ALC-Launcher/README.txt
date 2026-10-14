@@ -167,3 +167,14 @@ Compact view
 - "Compact: on / off" in the status bar (bottom right) switches to slim tiles: icon, name,
   version picker and status light on one line, so far more programs fit on screen. The Network panel
   tightens up too. Click it again for the normal view; the choice is remembered per person.
+
+Sticky notes
+- The "Notes" button in the top bar shows or hides a white sticky-note pad. On wide windows it sits in a
+  column on the right; on narrow ones it slides out over the right side.
+- Type a subject and the note. What you type is kept as a draft, so closing the app does not lose it.
+- "Save note" (or Ctrl+S) tears the top sheet off the pad and shows a fresh blank one. A note without a subject
+  is titled with its first line.
+- "Saved" lists your notes (newest first) with a search box. Click one to reopen and edit it; saving again
+  updates it. The x on a saved note deletes it (after asking). "New" starts a blank sheet.
+- Notes are stored with each person's settings (desktop: config.json in the settings folder; browser: that
+  browser's storage). They are not shared between people.

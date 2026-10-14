@@ -106,6 +106,7 @@ async function init() {
   document.documentElement.dataset.theme = state.theme;
   setLook('modern');   // the modern look is the only look now (style.css alone is the old classic design)
   setView(state.view || 'comfortable');
+  initNotes();
   $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
   if (window.api.netInfo) showNet(state.netOpen !== false);   // open by default
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
@@ -560,6 +561,120 @@ async function findDevices(a, from) {
   say('Found ' + plural2(list.length + routed.length, 'device') + ' on ' + a.name + (nBac ? ' (' + nBac + ' BACnet)' : ''), list.length + routed.length ? 'ok' : 'warn');
   if (!list.length && !routed.length) body.append(el('p', 'scan-note', 'Nothing answered. Check the cable and that this computer has an address on the right network.'));
   filter.oninput = () => { const q = filter.value.trim().toLowerCase(); body.querySelectorAll('tbody tr').forEach(tr => { tr.hidden = !!q && !tr.dataset.text.includes(q); }); };
+}
+
+// ---------- Sticky notes ----------
+// Saved notes live in state.notes (newest first) with the rest of the settings; the sheet being written is
+// kept in state.noteDraft as you type, so closing the app does not lose it. Saving tears the top sheet off.
+const notesList = () => (state.notes = state.notes || []);
+let noteId = null, draftTimer = 0;   // noteId: the saved note open on the pad, or null for a new one
+function showNotes(open) {
+  state.notesOpen = open;
+  $('notes').hidden = !open;
+  $('notesBtn').classList.toggle('on', open);
+}
+function notesView(list) {   // the pad, or the list of saved notes
+  $('notesPadView').hidden = list; $('notesListView').hidden = !list;
+  $('notesListBtn').classList.toggle('on', list);
+  if (list) { drawNotesList(); $('notesFilter').focus(); }
+}
+function loadNote(n) {
+  noteId = n ? n.id : null;
+  $('noteTitle').value = n ? n.title : ''; $('noteBody').value = n ? n.body : '';
+  $('noteState').textContent = n ? 'Editing a saved note' : '';
+  $('notesCount').textContent = notesList().length;
+}
+const noteDirty = () => {
+  const t = $('noteTitle').value.trim(), b = $('noteBody').value.trim(), n = noteId && notesList().find(x => x.id === noteId);
+  return n ? t !== n.title || b !== n.body : !!(t || b);
+};
+function keepDraft() {
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(() => { state.noteDraft = { id: noteId, title: $('noteTitle').value, body: $('noteBody').value }; save(); }, 600);
+}
+function saveNote() {
+  const title = $('noteTitle').value.trim(), body = $('noteBody').value.trim();
+  if (!title && !body) return say('Nothing to save yet: the note is empty', 'info');
+  const subject = title || body.split('\n')[0].slice(0, 40) || 'Untitled note', now = Date.now();
+  let n = noteId && notesList().find(x => x.id === noteId);
+  if (n) Object.assign(n, { title: subject, body, updated: now });
+  else n = { id: 'n' + now, title: subject, body, created: now, updated: now };
+  state.notes = [n, ...notesList().filter(x => x !== n)];
+  clearTimeout(draftTimer); state.noteDraft = null; save();
+  tearOff();
+  loadNote(null);
+  say('Saved note "' + subject + '"', 'ok');
+}
+// The top sheet tears off: a copy of it peels up from the pad and flies away, showing the blank sheet below.
+function tearOff() {
+  const sheet = $('note').cloneNode(true);
+  sheet.removeAttribute('id'); sheet.classList.add('tearing'); sheet.setAttribute('aria-hidden', 'true');
+  sheet.querySelectorAll('[id]').forEach(e => e.removeAttribute('id'));
+  sheet.querySelector('.note-title').value = $('noteTitle').value;
+  sheet.querySelector('.note-body').value = $('noteBody').value;
+  sheet.querySelectorAll('input,textarea').forEach(e => { e.readOnly = true; e.tabIndex = -1; });
+  $('note').parentElement.appendChild(sheet);
+  sheet.querySelector('.note-body').scrollTop = $('noteBody').scrollTop;
+  sheet.addEventListener('animationend', () => sheet.remove());
+  setTimeout(() => sheet.remove(), 4000);   // backup in case animationend never fires
+}
+function drawNotesList() {
+  const q = $('notesFilter').value.trim().toLowerCase(), box = $('notesItems');
+  box.innerHTML = '';
+  const all = notesList(), list = all.filter(n => !q || (n.title + ' ' + n.body).toLowerCase().includes(q));
+  if (!list.length) {
+    const p = document.createElement('p'); p.className = 'notes-empty';
+    p.textContent = all.length ? 'No notes match "' + q + '".' : 'No saved notes yet. Write one on the pad and press Save note.';
+    return box.appendChild(p);
+  }
+  for (const n of list) {
+    const it = document.createElement('div');
+    it.className = 'note-item'; it.tabIndex = 0; it.setAttribute('role', 'button'); it.title = 'Open "' + n.title + '"';
+    const h = document.createElement('div'); h.className = 'note-item-t'; h.textContent = n.title;
+    const d = document.createElement('div'); d.className = 'note-item-d';
+    d.textContent = new Date(n.updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const p = document.createElement('div'); p.className = 'note-item-p'; p.textContent = n.body;
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'note-item-x'; del.textContent = '×';
+    del.title = 'Delete this note'; del.setAttribute('aria-label', 'Delete note ' + n.title);
+    del.onclick = e => {
+      e.stopPropagation();
+      if (!confirm('Delete the note "' + n.title + '"?')) return;
+      state.notes = notesList().filter(x => x !== n); save();
+      if (noteId === n.id) loadNote(null);
+      $('notesCount').textContent = notesList().length; drawNotesList();
+      say('Deleted note "' + n.title + '"', 'info');
+    };
+    const open = () => {
+      if (noteDirty() && noteId !== n.id && !confirm('Discard the note you are writing and open "' + n.title + '"?')) return;
+      loadNote(n); notesView(false); $('noteBody').focus();
+    };
+    it.onclick = open;
+    it.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+    it.append(del, h, d, p);
+    box.appendChild(it);
+  }
+}
+$('notesBtn').onclick = () => { showNotes($('notes').hidden); save(); };
+$('notesHide').onclick = () => { showNotes(false); save(); };
+$('notesListBtn').onclick = () => notesView($('notesListView').hidden);
+$('notesNew').onclick = () => {
+  if (noteDirty() && !confirm('Discard the note you are writing and start a new one?')) return;
+  loadNote(null); state.noteDraft = null; save(); notesView(false); $('noteTitle').focus();
+};
+$('noteSave').onclick = saveNote;
+$('notesFilter').oninput = drawNotesList;
+['noteTitle', 'noteBody'].forEach(id => $(id).addEventListener('input', keepDraft));
+$('note').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveNote(); } });
+$('notesListView').addEventListener('keydown', e => { if (e.key === 'Escape') { e.preventDefault(); notesView(false); } });
+function initNotes() {
+  showNotes(state.notesOpen != null ? state.notesOpen : innerWidth >= 1100);   // open by default where there is room
+  loadNote(null);
+  const d = state.noteDraft;
+  if (d) {
+    const n = d.id && notesList().find(x => x.id === d.id);
+    if (n) loadNote(n);
+    $('noteTitle').value = d.title || ''; $('noteBody').value = d.body || '';
+  }
 }
 
 $('netBtn').onclick = () => showNet($('net').hidden);
