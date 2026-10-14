@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('api', {
   netInfo: () => ipcRenderer.invoke('netInfo'),
   setIp: cfg => ipcRenderer.invoke('setIp', cfg),
   scan: cfg => ipcRenderer.invoke('scan', cfg),
+  getStartup: () => ipcRenderer.invoke('getStartup'),
+  setStartup: on => ipcRenderer.invoke('setStartup', on),
   configPath: () => ipcRenderer.invoke('configPath'),
   checkUpdate: () => ipcRenderer.invoke('checkUpdate'),
   applyUpdate: () => ipcRenderer.invoke('applyUpdate')

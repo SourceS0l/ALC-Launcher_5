@@ -334,7 +334,32 @@ ipcMain.handle('scan', async (e, cfg = {}) => {
   };
 });
 
+// Open at Windows startup: Electron writes this user's Run entry (no admin rights needed); "enabled" also
+// clears a "disabled" set in Task Manager's Startup apps. The answer is whether Windows will really start it.
+const STARTUP_NAME = 'ALC Launcher';
+const startupState = () => {
+  const s = app.getLoginItemSettings({ path: process.execPath });
+  return s.executableWillLaunchAtLogin != null ? s.executableWillLaunchAtLogin : s.openAtLogin;
+};
+ipcMain.handle('getStartup', () => startupState());
+ipcMain.handle('setStartup', (e, on) => {
+  app.setLoginItemSettings({ openAtLogin: !!on, enabled: !!on, path: process.execPath, name: STARTUP_NAME });
+  return startupState();
+});
+// If the folder was moved since startup was turned on, point the entry at where the app is now
+// (read straight from the registry: Electron only reports entries that already point at the current path)
+function fixStartupPath() {
+  try {
+    const out = require('child_process').execFileSync('reg.exe', ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run', '/v', STARTUP_NAME], { encoding: 'utf8', windowsHide: true });
+    const m = out.match(/REG_SZ\s+(.+)\s*$/m);
+    const was = m && m[1].trim().replace(/^"([^"]*)".*$/, '$1');
+    if (was && was.toLowerCase() !== process.execPath.toLowerCase() && !fs.existsSync(was))   // its old location is gone
+      app.setLoginItemSettings({ openAtLogin: true, enabled: true, path: process.execPath, name: STARTUP_NAME });
+  } catch {}   // no entry: startup is off, nothing to fix
+}
+
 app.whenReady().then(() => {
+  fixStartupPath();
   const win = new BrowserWindow({
     width: 660, height: 820, minWidth: 420, minHeight: 480,
     show: false,   // shown maximized below, so it never flashes at the small size first

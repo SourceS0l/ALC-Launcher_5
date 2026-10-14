@@ -178,3 +178,10 @@ Sticky notes
   updates it. The x on a saved note deletes it (after asking). "New" starts a blank sheet.
 - Notes are stored with each person's settings (desktop: config.json in the settings folder; browser: that
   browser's storage). They are not shared between people.
+
+Open at Windows startup (desktop app)
+- "Startup: on / off" in the status bar makes ALC Launcher open when you sign in to Windows. It is added to
+  your own startup list (Task Manager > Startup apps), so no administrator rights are needed.
+- The button shows what Windows will really do: if the app was disabled in Task Manager it shows "off",
+  and turning it on again from the app re-enables it.
+- If the app's folder is moved, the next time it is opened from the new place the startup entry follows it.

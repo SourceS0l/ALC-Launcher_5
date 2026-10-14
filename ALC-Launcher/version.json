@@ -1,6 +1,6 @@
 {
-  "build": 32,
-  "notes": "Sticky notes: jot down notes by subject, save them with a tear-off, reopen them any time",
+  "build": 33,
+  "notes": "Startup: on/off in the status bar opens ALC Launcher when you sign in to Windows",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

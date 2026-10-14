@@ -821,6 +821,18 @@ function setView(view) {
   $('viewBtn').setAttribute('aria-pressed', String(on));
   $('viewBtn').title = on ? 'Back to the normal view: larger tiles' : 'Compact view: slim tiles, more programs on screen';
 }
+// Open at Windows startup (desktop app only). Windows keeps this setting, not the app's settings file, so the
+// button always shows what Windows will really do (including a "disabled" set in Task Manager).
+if (!window.api.getStartup) document.body.classList.add('no-startup');
+const showStartup = on => { $('startBtn').textContent = on ? 'Startup: on' : 'Startup: off'; $('startBtn').setAttribute('aria-pressed', String(on)); };
+if (window.api.getStartup) window.api.getStartup().then(showStartup).catch(() => {});
+$('startBtn').onclick = async () => {
+  const want = $('startBtn').getAttribute('aria-pressed') !== 'true';
+  const on = await window.api.setStartup(want);
+  showStartup(on);
+  if (on === want) say(on ? 'ALC Launcher will open when you sign in to Windows' : 'ALC Launcher will no longer open at startup', 'info');
+  else say('Windows did not accept the change. Check Task Manager > Startup apps.', 'warn');
+};
 $('viewBtn').onclick = () => { setView(state.view === 'compact' ? 'comfortable' : 'compact'); save(); say(state.view === 'compact' ? 'Compact view' : 'Normal view', 'info'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
