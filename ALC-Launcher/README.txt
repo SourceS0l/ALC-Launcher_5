@@ -112,13 +112,9 @@ IP Config
   /c start "IP Config" cmd /k ipconfig  (desktop app only; the browser version can only copy the path).
 - To run another command the same way, add a tool with that path and arguments, replacing "ipconfig".
 
-Look: modern or classic
-- The app uses the modern look by default. Click "Classic look" at the bottom right to switch back to the
-  original design (and "Modern look" to return). The choice is saved per person.
-- The modern design lives entirely in modern.css; style.css is the original design. Deleting the
-  <link ... modern.css> line in index.html removes the modern look for everyone.
-- The code from before the redesign is saved in git under the tag "ui-classic"
-  (git checkout ui-classic -- ALC-Launcher  restores those files exactly).
+Look
+- The app always uses the modern look (modern.css on top of style.css). The old classic design is no longer
+  offered in the app; the code from before the redesign is still in git under the tag "ui-classic".
 - Ctrl+K (or /) jumps to the search box.
 
 The cat
@@ -168,6 +164,6 @@ Notifications
 - Progress messages ("Opening...") only appear in the status bar at the bottom left.
 
 Compact view
-- The list-icon button in the top bar ("Compact" in the classic look) switches to slim tiles: icon, name,
+- "Compact: on / off" in the status bar (bottom right) switches to slim tiles: icon, name,
   version picker and status light on one line, so far more programs fit on screen. The Network panel
   tightens up too. Click it again for the normal view; the choice is remembered per person.

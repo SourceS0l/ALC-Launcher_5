@@ -104,7 +104,7 @@ async function init() {
     if (!t.versions) { t.versions = [{ label: 'Default', path: t.path || '' }]; t.active = 'Default'; delete t.path; }
   });
   document.documentElement.dataset.theme = state.theme;
-  setLook(state.ui || 'modern');
+  setLook('modern');   // the modern look is the only look now (style.css alone is the old classic design)
   setView(state.view || 'comfortable');
   $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
   if (window.api.netInfo) showNet(state.netOpen !== false);   // open by default
@@ -686,11 +686,11 @@ window.addEventListener('keydown', e => {
   }
   if (e.key === 'Escape' && document.activeElement === $('search') && $('search').value) { $('search').value = ''; render(); }
 });
-// Modern or classic look (modern.css only applies while <html data-ui="modern">)
+// The look: always modern. modern.css only applies while <html data-ui="modern">; without it style.css gives
+// the original classic design, which is no longer offered in the app.
 function setLook(ui) {
   state.ui = ui;
   document.documentElement.dataset.ui = ui;
-  $('uiBtn').textContent = ui === 'modern' ? 'Classic look' : 'Modern look';
 }
 $('catBtn').onclick = () => {
   state.cat = state.cat === false;   // flips on <-> off (on is the default)
@@ -702,12 +702,11 @@ function setView(view) {
   state.view = view;
   const on = view === 'compact';
   document.body.classList.toggle('compact', on);
-  $('viewBtn').classList.toggle('on', on);
+  $('viewBtn').textContent = on ? 'Compact: on' : 'Compact: off';
   $('viewBtn').setAttribute('aria-pressed', String(on));
-  $('viewBtn').title = on ? 'Back to the normal view: larger tiles' : 'Compact view: smaller tiles, more programs on screen';
+  $('viewBtn').title = on ? 'Back to the normal view: larger tiles' : 'Compact view: slim tiles, more programs on screen';
 }
 $('viewBtn').onclick = () => { setView(state.view === 'compact' ? 'comfortable' : 'compact'); save(); say(state.view === 'compact' ? 'Compact view' : 'Normal view', 'info'); };
-$('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look', 'info'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window
 // comes back into view. "Later" hides it until an even newer build is published.

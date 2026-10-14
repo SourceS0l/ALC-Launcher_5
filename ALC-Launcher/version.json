@@ -1,6 +1,6 @@
 {
-  "build": 30,
-  "notes": "Compact view: slim tiles so every program fits on one screen",
+  "build": 31,
+  "notes": "Compact on/off now sits in the status bar; the modern look is always on",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
