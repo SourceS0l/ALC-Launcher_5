@@ -105,6 +105,7 @@ async function init() {
   });
   document.documentElement.dataset.theme = state.theme;
   setLook(state.ui || 'modern');
+  setView(state.view || 'comfortable');
   $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
   if (window.api.netInfo) showNet(state.netOpen !== false);   // open by default
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
@@ -696,6 +697,16 @@ $('catBtn').onclick = () => {
   $('catBtn').textContent = state.cat ? 'Cat: on' : 'Cat: off'; save();
   say(state.cat ? 'The cat will visit every couple of minutes' : 'The cat will stay away', 'info');
 };
+// Compact view: tiles become slim rows (body.compact in style.css / modern.css). Saved per person.
+function setView(view) {
+  state.view = view;
+  const on = view === 'compact';
+  document.body.classList.toggle('compact', on);
+  $('viewBtn').classList.toggle('on', on);
+  $('viewBtn').setAttribute('aria-pressed', String(on));
+  $('viewBtn').title = on ? 'Back to the normal view: larger tiles' : 'Compact view: smaller tiles, more programs on screen';
+}
+$('viewBtn').onclick = () => { setView(state.view === 'compact' ? 'comfortable' : 'compact'); save(); say(state.view === 'compact' ? 'Compact view' : 'Normal view', 'info'); };
 $('uiBtn').onclick = () => { setLook(state.ui === 'modern' ? 'classic' : 'modern'); save(); say(state.ui === 'modern' ? 'Switched to the modern look' : 'Switched to the classic look', 'info'); };
 
 // Update notice: checks the published version.json on start, every 30 minutes, and when the window

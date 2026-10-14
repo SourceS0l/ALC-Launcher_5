@@ -166,3 +166,8 @@ Notifications
 - Besides app actions (program opened, IP copied, settings saved, update checks), they announce network
   changes made outside the app: a cable plugged in or unplugged, a new address from DHCP, a USB adapter removed.
 - Progress messages ("Opening...") only appear in the status bar at the bottom left.
+
+Compact view
+- The list-icon button in the top bar ("Compact" in the classic look) switches to slim tiles: icon, name,
+  version picker and status light on one line, so far more programs fit on screen. The Network panel
+  tightens up too. Click it again for the normal view; the choice is remembered per person.
