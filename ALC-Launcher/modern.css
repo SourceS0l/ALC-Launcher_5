@@ -361,23 +361,24 @@ html[data-ui="modern"] .pad{position:relative;margin:4px 6px 8px 0}
 html[data-ui="modern"] .pad::before,html[data-ui="modern"] .pad::after{content:"";position:absolute;inset:0;border-radius:3px;background:#f3f1e9;box-shadow:0 1px 2px rgba(0,0,0,.3)}
 html[data-ui="modern"] .pad::before{transform:translate(5px,6px) rotate(1.2deg)}
 html[data-ui="modern"] .pad::after{transform:translate(2px,3px) rotate(-.6deg);background:#f8f6ef}
-html[data-ui="modern"] .note{position:relative;z-index:2;display:flex;flex-direction:column;min-height:300px;padding:18px 16px 14px;border-radius:3px 3px 3px 16px;
+/* the sticky sheet styles are scoped to .notes so they never touch .note hint text in dialogs/forms */
+html[data-ui="modern"] .notes .note{position:relative;z-index:2;display:flex;flex-direction:column;min-height:300px;padding:18px 16px 14px;border-radius:3px 3px 3px 16px;
   background:linear-gradient(180deg,#fffefa 0%,#fdfbf4 100%);color:#2b2a26;box-shadow:0 1px 2px rgba(0,0,0,.25),0 12px 26px -12px rgba(0,0,0,.55)}
-html[data-ui="modern"][data-theme="light"] .note{box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.12),0 12px 26px -14px rgba(0,0,0,.3)}
-html[data-ui="modern"] .note::before{content:"";position:absolute;left:0;right:0;top:0;height:20px;border-radius:3px 3px 0 0;background:linear-gradient(rgba(0,0,0,.045),transparent);pointer-events:none}   /* the sticky strip */
-html[data-ui="modern"] .note:focus-within{box-shadow:0 1px 2px rgba(0,0,0,.25),0 12px 26px -12px rgba(0,0,0,.55),0 0 0 2px var(--accent-line)}
-html[data-ui="modern"] .note .note-title{height:auto;padding:0 0 7px;border:0;border-bottom:1.5px solid rgba(0,0,0,.12);border-radius:0;background:transparent;box-shadow:none;
+html[data-ui="modern"][data-theme="light"] .notes .note{box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.12),0 12px 26px -14px rgba(0,0,0,.3)}
+html[data-ui="modern"] .notes .note::before{content:"";position:absolute;left:0;right:0;top:0;height:20px;border-radius:3px 3px 0 0;background:linear-gradient(rgba(0,0,0,.045),transparent);pointer-events:none}   /* the sticky strip */
+html[data-ui="modern"] .notes .note:focus-within{box-shadow:0 1px 2px rgba(0,0,0,.25),0 12px 26px -12px rgba(0,0,0,.55),0 0 0 2px var(--accent-line)}
+html[data-ui="modern"] .notes .note .note-title{height:auto;padding:0 0 7px;border:0;border-bottom:1.5px solid rgba(0,0,0,.12);border-radius:0;background:transparent;box-shadow:none;
   color:#23221d;font:650 15px/1.35 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif}
-html[data-ui="modern"] .note .note-body{flex:1;min-height:230px;margin-top:4px;padding:0;border:0;border-radius:0;box-shadow:none;resize:none;outline:none;
+html[data-ui="modern"] .notes .note .note-body{flex:1;min-height:230px;margin-top:4px;padding:0;border:0;border-radius:0;box-shadow:none;resize:none;outline:none;
   background:repeating-linear-gradient(transparent 0 25px,rgba(70,110,170,.17) 25px 26px);background-attachment:local;
   color:#2c2c3a;font:15px/26px "Segoe Print","Bradley Hand","Comic Sans MS",cursive}
-html[data-ui="modern"] .note .note-title::placeholder,html[data-ui="modern"] .note .note-body::placeholder{color:#a8a395}
-html[data-ui="modern"] .note .note-title:focus,html[data-ui="modern"] .note .note-body:focus{outline:none;box-shadow:none;border-color:rgba(0,0,0,.2)}
+html[data-ui="modern"] .notes .note .note-title::placeholder,html[data-ui="modern"] .notes .note .note-body::placeholder{color:#a8a395}
+html[data-ui="modern"] .notes .note .note-title:focus,html[data-ui="modern"] .notes .note .note-body:focus{outline:none;box-shadow:none;border-color:rgba(0,0,0,.2)}
 html[data-ui="modern"] .notes-acts{display:flex;align-items:center;gap:8px}
 html[data-ui="modern"] .note-state{font-size:11.5px;color:var(--faint)}
 html[data-ui="modern"] .notes-acts .btn{height:32px}
 /* tearing off: peels up from the corner, then flies away and fades; its top edge is torn */
-html[data-ui="modern"] .note.tearing{position:absolute;inset:0;z-index:4;pointer-events:none;transform-origin:100% 0;animation:note-tear .85s cubic-bezier(.45,0,.35,1) forwards;
+html[data-ui="modern"] .notes .note.tearing{position:absolute;inset:0;z-index:4;pointer-events:none;transform-origin:100% 0;animation:note-tear .85s cubic-bezier(.45,0,.35,1) forwards;
   clip-path:polygon(0 5px,4% 1px,8% 5px,12% 0,17% 4px,22% 1px,27% 5px,32% 0,37% 4px,42% 1px,47% 5px,52% 0,57% 4px,62% 1px,67% 5px,72% 0,77% 4px,82% 1px,87% 5px,92% 0,96% 4px,100% 1px,100% 100%,0 100%)}
 @keyframes note-tear{
   0%{transform:none;opacity:1}

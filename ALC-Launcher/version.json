@@ -1,6 +1,6 @@
 {
-  "build": 33,
-  "notes": "Startup: on/off in the status bar opens ALC Launcher when you sign in to Windows",
+  "build": 34,
+  "notes": "Fixed a big white box under the Apply button in Edit IP (and hints in the tool editor)",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
