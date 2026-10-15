@@ -33,6 +33,7 @@
   <h1><img class="m-only brand-mark" src="logo.png" alt=""><span>ALC Launcher</span></h1>
   <div class="search"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" type="search" placeholder="Search tools" aria-label="Search tools"><kbd class="m-only">Ctrl K</kbd></div>
   <button id="notesBtn" class="btn" title="Show or hide the sticky notes"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/></svg><span class="lbl">Notes</span></button>
+  <button id="coBtn" class="btn ai-only" title="Open the read-only building co-pilot"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 8 0 0 1 9 8 9 8 0 0 1-9 8 10 10 0 0 1-3-.5L4 20l1-3.5A8 8 0 0 1 3 11a9 8 0 0 1 9-8Z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg><span class="lbl">Co-pilot</span></button>
   <button id="netBtn" class="btn net-only" title="Show or hide this PC's network adapters and IP addresses"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-4h14v4"/></svg><span class="lbl">Network</span></button>
   <button id="editBtn" class="btn"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="lbl">Edit</span></button>
   <a id="deskBtn" class="btn web-only" title="Download the desktop version, which opens programs with one click"><svg class="m-only ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg><span class="lbl">Get desktop app</span></a>
@@ -58,6 +59,33 @@
   </div>
   <div id="netList" class="net-list"></div>
   <div id="scanBox" class="scan" hidden></div>
+</section>
+<section id="copilot" class="copilot ai-only" hidden aria-label="Building co-pilot">
+  <div class="co-head">
+    <span class="co-title">Co-pilot</span>
+    <span id="coEngine" class="co-badge">Claude</span>
+    <span class="co-ro" title="This assistant can only read the system. It has no way to change anything.">read-only</span>
+    <span class="grow"></span>
+    <button type="button" id="coGear" class="btn" title="Co-pilot settings">Settings</button>
+    <button type="button" id="coClear" class="btn" title="Start a new conversation">New</button>
+    <button type="button" id="coHide" class="btn" title="Close the co-pilot">Close</button>
+  </div>
+  <div id="coSettings" class="co-settings" hidden>
+    <div class="co-engines" role="radiogroup" aria-label="AI engine">
+      <label><input type="radio" name="coProvider" value="anthropic"> Claude (cloud)</label>
+      <label><input type="radio" name="coProvider" value="ollama"> Local (Ollama)</label>
+    </div>
+    <label class="co-f anthropic-only">Anthropic API key <input id="coKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label>
+    <label class="co-f anthropic-only">Model <input id="coModelA" autocomplete="off" placeholder="claude-sonnet-4-5"></label>
+    <label class="co-f ollama-only">Ollama model <input id="coModelO" autocomplete="off" placeholder="llama3.1"></label>
+    <label class="co-f ollama-only">Ollama host <input id="coHost" autocomplete="off" placeholder="http://localhost:11434"></label>
+    <p class="note">The co-pilot can only read the system over BACnet. Claude sends the point values it reads to Anthropic's API to answer; the local engine keeps everything on this PC. Your key is stored only on this computer.</p>
+  </div>
+  <div id="coLog" class="co-log" aria-live="polite"></div>
+  <form id="coForm" class="co-input">
+    <textarea id="coText" rows="1" placeholder="Ask about the system you're connected to..." aria-label="Ask the co-pilot"></textarea>
+    <button type="submit" id="coSend" class="btn primary" title="Send (Enter)">Send</button>
+  </form>
 </section>
 <main id="board"></main>
 </div>

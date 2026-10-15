@@ -185,3 +185,17 @@ Open at Windows startup (desktop app)
 - The button shows what Windows will really do: if the app was disabled in Task Manager it shows "off",
   and turning it on again from the app re-enables it.
 - If the app's folder is moved, the next time it is opened from the new place the startup entry follows it.
+
+Co-pilot (read-only, desktop app) - TRIAL
+- The "Co-pilot" button opens a chat assistant that can READ the BACnet system on the network you're
+  connected to and answer questions ("what's the discharge air temp on AHU-3", "is anything in alarm",
+  "list the controllers"). It is read-only: bacnet.js has no write path and the AI is given only two
+  tools, list_devices and read_device_points, so it cannot change, force, or command anything.
+- Settings (gear): choose the engine. Claude (cloud) needs your Anthropic API key and a model name
+  (e.g. claude-sonnet-4-5) - it sends the point values it reads to Anthropic's API to answer. Local (Ollama)
+  runs on your PC with nothing leaving the network - install Ollama, pull a tool-capable model (e.g.
+  llama3.1), and set the model name. Your key is stored only on this computer (config.json).
+- It reads over BACnet (UDP 47808), the same discovery used by "Find devices". If another BACnet program
+  holds that port exclusively, or you're not on the controller's network, it will say so.
+- How it works: it finds the controller by name, reads that one device's points (name, present value,
+  units, alarm state), and answers. Reading a large controller takes a few seconds.

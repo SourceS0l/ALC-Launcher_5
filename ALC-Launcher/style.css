@@ -353,3 +353,34 @@ body.no-net .net-only{display:none !important}
 .compact .nic-addr{font-size:16px}
 .compact .nic-kv{font-size:11.5px}
 .compact .nic-acts .btn{padding:3px 9px;font-size:12px}
+
+/* Co-pilot chat panel (desktop app only) */
+body.no-ai .ai-only{display:none !important}
+.copilot{position:fixed;right:16px;bottom:62px;z-index:55;display:flex;flex-direction:column;width:min(420px,calc(100vw - 32px));height:min(72vh,640px);
+  background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.5);overflow:hidden}
+.copilot[hidden]{display:none}
+.co-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.co-title{font-weight:650}
+.co-badge{padding:1px 7px;border-radius:9px;background:var(--panel-hi);font-size:11px;font-weight:600}
+.co-ro{font-size:10.5px;color:var(--ok);border:1px solid var(--line);padding:1px 6px;border-radius:8px}
+.co-head .btn{padding:4px 9px;font-size:12px}
+.co-settings{padding:12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:9px;background:var(--bg)}
+.co-settings[hidden]{display:none}
+.co-engines{display:flex;gap:8px}
+.co-engines label{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:12.5px;color:var(--text)}
+.co-engines label:has(input:checked){border-color:var(--accent);background:var(--panel-hi)}
+.co-engines input{width:auto;margin:0}
+.co-f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim)}
+.copilot[data-prov=anthropic] .ollama-only,.copilot[data-prov=ollama] .anthropic-only{display:none}
+.co-settings .note{margin:2px 0 0}
+.co-log{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.co-msg{max-width:86%;padding:8px 11px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.co-msg.user{align-self:flex-end;background:var(--accent);color:#06222d;border-bottom-right-radius:4px;font-weight:500}
+.co-msg.bot{align-self:flex-start;background:var(--panel-hi);border-bottom-left-radius:4px}
+.co-msg.error{align-self:flex-start;background:rgba(239,107,107,.14);color:var(--danger);border:1px solid rgba(239,107,107,.3)}
+.co-chip{align-self:flex-start;font-size:11.5px;color:var(--dim);padding:1px 2px}
+.co-chip::before{content:"\203a  ";opacity:.6}
+.co-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}
+.co-input textarea{flex:1;resize:none;max-height:120px;min-height:38px;padding:8px 10px;font:inherit;font-size:13px}
+.co-input .btn{padding:0 14px;align-self:stretch}
+@media (max-width:520px){.copilot{right:8px;left:8px;width:auto;bottom:54px;height:76vh}}

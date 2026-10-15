@@ -1,6 +1,6 @@
 {
-  "build": 34,
-  "notes": "Fixed a big white box under the Apply button in Edit IP (and hints in the tool editor)",
+  "build": 35,
+  "notes": "NEW (trial): a read-only co-pilot that can see the BACnet system you are connected to",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",
