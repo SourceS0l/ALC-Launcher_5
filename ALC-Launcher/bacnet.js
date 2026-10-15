@@ -111,19 +111,24 @@ class Bacnet {
   }
 }
 
-// Discover devices on the given broadcast addresses (Who-Is to all networks), read each device's name.
-async function discover(broadcasts, ms = 3500) {
+// Find devices. targets = addresses to send Who-Is to. In "field" mode these are subnet broadcasts and we
+// bind 47808 to catch broadcast I-Am. In "server" mode (unicast:true) we unicast a global Who-Is straight to
+// the WebCTRL server from an ephemeral port (bindPort 0), so it coexists with a BACnet program that owns
+// 47808 locally. seed devices (e.g. a known server instance) are included so they can be read even if the
+// server answers I-Am by broadcast, which we would not catch on an ephemeral port.
+async function discover(targets, { ms = 3500, bindPort = 47808, seed = [], unicast = false } = {}) {
   const bac = new Bacnet();
-  await bac.open();
+  await bac.open(bindPort);
   const devs = new Map();
+  for (const s of seed) devs.set(s.instance, { instance: s.instance, ip: s.ip, port: s.port || 47808, net: s.net != null ? s.net : null, sadr: s.sadr || null, vendorId: s.vendorId || 0, name: '' });
   bac.onIAm = (a, src) => {
     if (a[2] !== 0xc4) return;
     const obj = a.readUInt32BE(3), instance = obj & 0x3fffff;
     let pos = 7; const max = decodeValue(a, pos); pos = max.next; const seg = decodeValue(a, pos); pos = seg.next; const vnd = decodeValue(a, pos);
     if (!devs.has(instance)) devs.set(instance, { instance, ip: src.ip, port: src.port, net: src.net, sadr: src.sadr, vendorId: vnd.value, name: '' });
   };
-  const whoIs = [0x01, 0x20, 0xff, 0xff, 0x00, 0xff, 0x10, 0x08];
-  for (const b of broadcasts) try { bac.sock.send(Buffer.from([0x81, 0x0b, 0x00, whoIs.length + 4, ...whoIs]), 47808, b); } catch {}
+  const fn = unicast ? 0x0a : 0x0b, whoIs = [0x01, 0x20, 0xff, 0xff, 0x00, 0xff, 0x10, 0x08];
+  for (const b of targets) try { bac.sock.send(Buffer.from([0x81, fn, 0x00, whoIs.length + 4, ...whoIs]), 47808, b); } catch {}
   await new Promise(r => setTimeout(r, ms));
   for (const d of [...devs.values()].slice(0, 300)) {
     try { const v = await bac.readProperty(d, 8, d.instance, PROP.objectName); if (v[0] && v[0].kind === 'string') d.name = v[0].value; } catch {}
@@ -133,9 +138,9 @@ async function discover(broadcasts, ms = 3500) {
 }
 
 // Read the point list of one device: name, present value, units, alarm state for each point-like object.
-async function readPoints(target, instance, { cap = 400, onProgress } = {}) {
+async function readPoints(target, instance, { cap = 400, onProgress, bindPort = 47808 } = {}) {
   const bac = new Bacnet();
-  await bac.open();
+  await bac.open(bindPort);
   try {
     const dev = { ...target };
     const countV = await bac.readProperty(dev, 8, instance, PROP.objectList, 0);

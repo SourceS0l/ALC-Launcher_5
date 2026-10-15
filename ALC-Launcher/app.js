@@ -703,8 +703,9 @@ const coCfg = () => { const a = state.ai || {}; return coProvider() === 'ollama'
 const coScroll = () => { $('coLog').scrollTop = $('coLog').scrollHeight; };
 function coBubble(role, text) { const el = document.createElement('div'); el.className = 'co-msg ' + role; el.textContent = text; $('coLog').appendChild(el); coScroll(); return el; }
 function coChip(text) { const el = document.createElement('div'); el.className = 'co-chip'; el.textContent = text; $('coLog').appendChild(el); coScroll(); return el; }
+const coBacnetCfg = () => ({ server: (state.ai && state.ai.coServer) || '', instance: (state.ai && state.ai.coServerInst) || '' });
 const CO_RUN = {
-  list_devices: async () => { const r = await window.api.coDiscover(); return r.error ? r : { devices: (r.devices || []).map(d => ({ instance: d.instance, name: d.name, vendor: d.vendor, ip: d.ip, network: d.net })) }; },
+  list_devices: async () => { const r = await window.api.coDiscover(coBacnetCfg()); return r.error ? r : { devices: (r.devices || []).map(d => ({ instance: d.instance, name: d.name, vendor: d.vendor, ip: d.ip, network: d.net })) }; },
   read_device_points: async input => { const inst = parseInt(input && input.device_instance, 10); return inst >= 0 ? await window.api.coPoints(inst) : { error: 'Provide a device_instance from list_devices.' }; }
 };
 const coDescribe = input => { const i = input && input.device_instance; return coKnownDevices[i] || 'device ' + i; };
@@ -747,6 +748,7 @@ function coReflect() {
   const a = state.ai = state.ai || {};
   document.querySelectorAll('[name=coProvider]').forEach(r => r.checked = r.value === coProvider());
   $('coKey').value = a.key || ''; $('coModelA').value = a.anthropicModel || ''; $('coModelO').value = a.ollamaModel || ''; $('coHost').value = a.host || '';
+  $('coServer').value = a.coServer != null ? a.coServer : ''; $('coServerInst').value = a.coServerInst || '';
   $('copilot').dataset.prov = coProvider();
   $('coEngine').textContent = coProvider() === 'ollama' ? 'Local' : 'Claude';
 }
@@ -754,6 +756,7 @@ function coShow(open) { state.copilotOpen = open; $('copilot').hidden = !open; $
 function initCopilot() {
   if (!window.api.aiTurn) return;
   state.ai = state.ai || {};
+  if (state.ai.coServer == null) state.ai.coServer = '127.0.0.1';   // default to a local WebCTRL server; clear it to scan the network
   coReflect();
   if (state.copilotOpen) coShow(true);
 }
@@ -762,6 +765,8 @@ $('coKey').oninput = () => { (state.ai = state.ai || {}).key = $('coKey').value.
 $('coModelA').oninput = () => { (state.ai = state.ai || {}).anthropicModel = $('coModelA').value.trim(); save(); };
 $('coModelO').oninput = () => { (state.ai = state.ai || {}).ollamaModel = $('coModelO').value.trim(); save(); };
 $('coHost').oninput = () => { (state.ai = state.ai || {}).host = $('coHost').value.trim(); save(); };
+$('coServer').oninput = () => { (state.ai = state.ai || {}).coServer = $('coServer').value.trim(); save(); };
+$('coServerInst').oninput = () => { (state.ai = state.ai || {}).coServerInst = $('coServerInst').value.replace(/[^0-9]/g, ''); $('coServerInst').value = state.ai.coServerInst; save(); };
 $('coGear').onclick = () => { $('coSettings').hidden = !$('coSettings').hidden; };
 $('coHide').onclick = () => { coShow(false); save(); };
 $('coBtn').onclick = () => { coShow($('copilot').hidden); save(); };

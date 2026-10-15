@@ -79,6 +79,9 @@
     <label class="co-f anthropic-only">Model <input id="coModelA" autocomplete="off" placeholder="claude-sonnet-4-5"></label>
     <label class="co-f ollama-only">Ollama model <input id="coModelO" autocomplete="off" placeholder="llama3.1"></label>
     <label class="co-f ollama-only">Ollama host <input id="coHost" autocomplete="off" placeholder="http://localhost:11434"></label>
+    <div class="co-sep">BACnet (where it reads from)</div>
+    <label class="co-f">WebCTRL / BACnet server <input id="coServer" autocomplete="off" placeholder="127.0.0.1  (blank = scan the network)"></label>
+    <label class="co-f">Server device instance <input id="coServerInst" inputmode="numeric" autocomplete="off" placeholder="optional, but most reliable for a local server"></label>
     <p class="note">The co-pilot can only read the system over BACnet. Claude sends the point values it reads to Anthropic's API to answer; the local engine keeps everything on this PC. Your key is stored only on this computer.</p>
   </div>
   <div id="coLog" class="co-log" aria-live="polite"></div>

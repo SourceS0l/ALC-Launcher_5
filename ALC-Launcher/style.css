@@ -384,3 +384,4 @@ body.no-ai .ai-only{display:none !important}
 .co-input textarea{flex:1;resize:none;max-height:120px;min-height:38px;padding:8px 10px;font:inherit;font-size:13px}
 .co-input .btn{padding:0 14px;align-self:stretch}
 @media (max-width:520px){.copilot{right:8px;left:8px;width:auto;bottom:54px;height:76vh}}
+.co-sep{margin-top:4px;font-size:10.5px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}

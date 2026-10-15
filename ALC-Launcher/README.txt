@@ -195,7 +195,13 @@ Co-pilot (read-only, desktop app) - TRIAL
   (e.g. claude-sonnet-4-5) - it sends the point values it reads to Anthropic's API to answer. Local (Ollama)
   runs on your PC with nothing leaving the network - install Ollama, pull a tool-capable model (e.g.
   llama3.1), and set the model name. Your key is stored only on this computer (config.json).
-- It reads over BACnet (UDP 47808), the same discovery used by "Find devices". If another BACnet program
-  holds that port exclusively, or you're not on the controller's network, it will say so.
+- Where it reads from (co-pilot Settings > BACnet):
+  * "WebCTRL / BACnet server" set to an address (default 127.0.0.1) talks to that server directly from a
+    spare local port, so it works alongside WebCTRL on the same PC and reads what the server exposes. This is
+    the right mode for a WebCTRL server you open at localhost.
+  * Blank = scan the subnet by broadcast on UDP 47808 (for a laptop plugged into field controllers).
+  * "Server device instance" (optional): enter the server's BACnet device instance (see WebCTRL's BACnet
+    settings) for the most reliable local read - it reads that device directly instead of relying on discovery.
+- It is read-only: BACnet ReadProperty only, no writes.
 - How it works: it finds the controller by name, reads that one device's points (name, present value,
   units, alarm state), and answers. Reading a large controller takes a few seconds.

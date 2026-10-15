@@ -338,7 +338,7 @@ ipcMain.handle('scan', async (e, cfg = {}) => {
 // The co-pilot can ONLY read. bacnet.js has no write path, and the two tools below are both reads, so the AI
 // has no way to change a device. Discovered devices are cached so later reads can address routed controllers.
 const bacnet = require('./bacnet');
-let coCache = new Map();
+let coCache = new Map(), coBindPort = 47808;
 function localBroadcasts() {
   const out = [];
   for (const list of Object.values(os.networkInterfaces())) for (const a of list || [])
@@ -348,17 +348,23 @@ function localBroadcasts() {
     }
   return [...new Set(out)];
 }
-ipcMain.handle('coDiscover', async () => {
+// With a server set (e.g. a WebCTRL server at 127.0.0.1) we talk to it directly from an ephemeral port, so
+// it works alongside a local BACnet program and reads what that server exposes. Blank = scan the subnet.
+ipcMain.handle('coDiscover', async (e, cfg = {}) => {
   try {
-    const devs = await bacnet.discover(localBroadcasts());
+    const server = ((cfg && cfg.server) || '').trim(), inst = parseInt(cfg && cfg.instance, 10);
+    if (server && !isIPv4(server)) return { error: 'The BACnet server address is not a valid IPv4 address.' };
+    coBindPort = server ? 0 : 47808;
+    const seed = server && inst >= 0 ? [{ instance: inst, ip: server, port: 47808, net: null, vendorId: 24 }] : [];
+    const devs = await bacnet.discover(server ? [server] : localBroadcasts(), { bindPort: coBindPort, unicast: !!server, seed });
     coCache = new Map(devs.map(d => [d.instance, d]));
-    return { devices: devs.map(({ sadr, ...d }) => ({ ...d, vendor: BACNET_VENDORS[d.vendorId] || '' })) };
-  } catch (e) { return { error: e.message }; }
+    return { devices: devs.map(({ sadr, ...d }) => ({ ...d, vendor: BACNET_VENDORS[d.vendorId] || '' })), server: server || null };
+  } catch (e2) { return { error: e2.message }; }
 });
 ipcMain.handle('coPoints', async (e, instance) => {
   const d = coCache.get(parseInt(instance, 10));
   if (!d) return { error: 'That device was not in the last scan. List devices first.' };
-  try { return await bacnet.readPoints(d, d.instance, { cap: 500 }); }
+  try { return await bacnet.readPoints(d, d.instance, { cap: 500, bindPort: coBindPort }); }
   catch (err) { return { error: err.message }; }
 });
 
