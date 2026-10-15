@@ -1,6 +1,6 @@
 {
-  "build": 36,
-  "notes": "Co-pilot can now read a WebCTRL/BACnet server directly (incl. localhost), not just scan the network",
+  "build": 37,
+  "notes": "Removed the co-pilot feature",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

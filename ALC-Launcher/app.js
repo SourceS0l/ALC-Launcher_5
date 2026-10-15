@@ -107,7 +107,6 @@ async function init() {
   setLook('modern');   // the modern look is the only look now (style.css alone is the old classic design)
   setView(state.view || 'comfortable');
   initNotes();
-  initCopilot();
   $('catBtn').textContent = state.cat === false ? 'Cat: off' : 'Cat: on';
   if (window.api.netInfo) showNet(state.netOpen !== false);   // open by default
   CATS.forEach(c => $('fCat').add(new Option(c, c)));
@@ -677,103 +676,6 @@ function initNotes() {
     $('noteTitle').value = d.title || ''; $('noteBody').value = d.body || '';
   }
 }
-
-// ---------- Co-pilot: a read-only building assistant (desktop app only) ----------
-if (!window.api.aiTurn) document.body.classList.add('no-ai');
-const CO_TOOLS = [
-  { name: 'list_devices', description: "Discover the BACnet devices (controllers) reachable on the network this computer is connected to. Returns each device's instance number, name, vendor and IP. Call this first to find a controller before reading its points.", schema: { type: 'object', properties: {}, required: [] } },
-  { name: 'read_device_points', description: 'Read every point in one BACnet device: name, present value, engineering units and alarm state. Use the device_instance from list_devices. Use this to answer questions about temperatures, setpoints, statuses, alarms, etc.', schema: { type: 'object', properties: { device_instance: { type: 'integer', description: 'The device instance number from list_devices' } }, required: ['device_instance'] } }
-];
-const CO_SYSTEM = `You are a read-only co-pilot inside ALC Launcher, a tool used by HVAC controls technicians. You help inspect building automation systems (WebCTRL / Automated Logic and other BACnet systems) on the network the technician's laptop is currently connected to.
-
-You can ONLY read. Your tools are list_devices and read_device_points. You cannot change setpoints, force points or command anything, and you must never imply that you did. If asked to make a change, explain that you are read-only and describe what the technician could do themselves (e.g. which point to force in WebCTRL) without pretending to do it.
-
-How to work:
-- To answer anything about live values, first call list_devices (unless you already have the list in this conversation), pick the right controller by its name, then read_device_points on it.
-- Device and point names come from the field and are often cryptic abbreviations; use them as given and interpret sensibly (e.g. "DA-T" = discharge air temp, "CLG" = cooling, "SP"/"STPT" = setpoint, "OCC" = occupied).
-- Be concise and practical. Give values with units. Call out anything in alarm (state other than normal). Note what a value implies for operation when useful.
-- A controller can have hundreds of points and reading one takes a few seconds, so read only the device(s) you need.
-- If no devices are found, say so and suggest checking the network connection and that they're on the controller's network.`;
-
-let coMsgs = [], coBusy = false, coKnownDevices = {};
-const coProvider = () => (state.ai && state.ai.provider) === 'ollama' ? 'ollama' : 'anthropic';
-const coCfg = () => { const a = state.ai || {}; return coProvider() === 'ollama'
-  ? { model: a.ollamaModel || 'llama3.1', host: a.host || 'http://localhost:11434' }
-  : { key: a.key || '', model: a.anthropicModel || 'claude-sonnet-4-5' }; };
-const coScroll = () => { $('coLog').scrollTop = $('coLog').scrollHeight; };
-function coBubble(role, text) { const el = document.createElement('div'); el.className = 'co-msg ' + role; el.textContent = text; $('coLog').appendChild(el); coScroll(); return el; }
-function coChip(text) { const el = document.createElement('div'); el.className = 'co-chip'; el.textContent = text; $('coLog').appendChild(el); coScroll(); return el; }
-const coBacnetCfg = () => ({ server: (state.ai && state.ai.coServer) || '', instance: (state.ai && state.ai.coServerInst) || '' });
-const CO_RUN = {
-  list_devices: async () => { const r = await window.api.coDiscover(coBacnetCfg()); return r.error ? r : { devices: (r.devices || []).map(d => ({ instance: d.instance, name: d.name, vendor: d.vendor, ip: d.ip, network: d.net })) }; },
-  read_device_points: async input => { const inst = parseInt(input && input.device_instance, 10); return inst >= 0 ? await window.api.coPoints(inst) : { error: 'Provide a device_instance from list_devices.' }; }
-};
-const coDescribe = input => { const i = input && input.device_instance; return coKnownDevices[i] || 'device ' + i; };
-function coChipDone(name, result) {
-  if (result && result.error) return (name === 'list_devices' ? 'Could not scan: ' : 'Could not read: ') + result.error;
-  if (name === 'list_devices') { (result.devices || []).forEach(d => coKnownDevices[d.instance] = d.name || ('#' + d.instance)); return 'Found ' + (result.devices || []).length + ' controller(s)'; }
-  const pts = (result.points || []).length; return 'Read ' + pts + ' point' + (pts === 1 ? '' : 's') + (result.count > pts ? ' (of ' + result.count + ' objects)' : '');
-}
-async function coSend(text) {
-  if (coBusy) return;
-  coBusy = true; $('coSend').disabled = true;
-  coMsgs.push({ role: 'user', text }); coBubble('user', text);
-  const busy = coChip('Thinking…');
-  try {
-    for (let step = 0; step < 8; step++) {
-      const res = await window.api.aiTurn(coProvider(), coCfg(), CO_SYSTEM, coMsgs, CO_TOOLS);
-      if (res.error) { busy.remove(); coBubble('error', res.error); break; }
-      coMsgs.push({ role: 'assistant', text: res.text || '', toolCalls: res.toolCalls || [] });
-      if (res.text) coBubble('bot', res.text);
-      if (!res.toolCalls || !res.toolCalls.length) { busy.remove(); break; }
-      busy.textContent = 'Working…';
-      for (const call of res.toolCalls) {
-        const chip = coChip(call.name === 'list_devices' ? 'Scanning the network for controllers…' : 'Reading ' + coDescribe(call.input) + '…');
-        let result; try { result = CO_RUN[call.name] ? await CO_RUN[call.name](call.input) : { error: 'Unknown tool ' + call.name }; } catch (e) { result = { error: e.message }; }
-        chip.textContent = coChipDone(call.name, result);
-        coMsgs.push({ role: 'tool', toolCallId: call.id, name: call.name, content: JSON.stringify(result).slice(0, 60000) });
-      }
-      if (step === 7) { busy.remove(); coBubble('error', 'Stopped after too many steps — try a more specific question.'); }
-    }
-  } catch (e) { busy.remove(); coBubble('error', e.message); }
-  if ($('coLog').contains(busy)) busy.remove();
-  coBusy = false; $('coSend').disabled = false; coScroll();
-}
-function coGreeting() {
-  if ($('coLog').children.length) return;
-  coBubble('bot', 'Hi — I can read the BACnet system you’re connected to. Try “list the controllers”, “what’s the discharge air temp on AHU-3”, or “is anything in alarm”. I can only read — I can’t change anything.');
-  if (coProvider() === 'anthropic' && !(state.ai && state.ai.key)) { $('coSettings').hidden = false; coChip('Add your Anthropic API key in Settings to use Claude, or switch to Local (Ollama).'); }
-}
-function coReflect() {
-  const a = state.ai = state.ai || {};
-  document.querySelectorAll('[name=coProvider]').forEach(r => r.checked = r.value === coProvider());
-  $('coKey').value = a.key || ''; $('coModelA').value = a.anthropicModel || ''; $('coModelO').value = a.ollamaModel || ''; $('coHost').value = a.host || '';
-  $('coServer').value = a.coServer != null ? a.coServer : ''; $('coServerInst').value = a.coServerInst || '';
-  $('copilot').dataset.prov = coProvider();
-  $('coEngine').textContent = coProvider() === 'ollama' ? 'Local' : 'Claude';
-}
-function coShow(open) { state.copilotOpen = open; $('copilot').hidden = !open; $('coBtn').classList.toggle('on', open); if (open) { coGreeting(); setTimeout(() => $('coText').focus(), 50); } }
-function initCopilot() {
-  if (!window.api.aiTurn) return;
-  state.ai = state.ai || {};
-  if (state.ai.coServer == null) state.ai.coServer = '127.0.0.1';   // default to a local WebCTRL server; clear it to scan the network
-  coReflect();
-  if (state.copilotOpen) coShow(true);
-}
-document.querySelectorAll('[name=coProvider]').forEach(r => r.onchange = () => { (state.ai = state.ai || {}).provider = r.value; save(); coReflect(); });
-$('coKey').oninput = () => { (state.ai = state.ai || {}).key = $('coKey').value.trim(); save(); };
-$('coModelA').oninput = () => { (state.ai = state.ai || {}).anthropicModel = $('coModelA').value.trim(); save(); };
-$('coModelO').oninput = () => { (state.ai = state.ai || {}).ollamaModel = $('coModelO').value.trim(); save(); };
-$('coHost').oninput = () => { (state.ai = state.ai || {}).host = $('coHost').value.trim(); save(); };
-$('coServer').oninput = () => { (state.ai = state.ai || {}).coServer = $('coServer').value.trim(); save(); };
-$('coServerInst').oninput = () => { (state.ai = state.ai || {}).coServerInst = $('coServerInst').value.replace(/[^0-9]/g, ''); $('coServerInst').value = state.ai.coServerInst; save(); };
-$('coGear').onclick = () => { $('coSettings').hidden = !$('coSettings').hidden; };
-$('coHide').onclick = () => { coShow(false); save(); };
-$('coBtn').onclick = () => { coShow($('copilot').hidden); save(); };
-$('coClear').onclick = () => { if (coBusy) return; coMsgs = []; coKnownDevices = {}; $('coLog').innerHTML = ''; coGreeting(); };
-$('coForm').onsubmit = e => { e.preventDefault(); const t = $('coText').value.trim(); if (!t || coBusy) return; $('coText').value = ''; $('coText').style.height = 'auto'; coSend(t); };
-$('coText').addEventListener('input', () => { $('coText').style.height = 'auto'; $('coText').style.height = Math.min(120, $('coText').scrollHeight) + 'px'; });
-$('coText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('coForm').requestSubmit(); } });
 
 $('netBtn').onclick = () => showNet($('net').hidden);
 $('netHide').onclick = () => showNet(false);

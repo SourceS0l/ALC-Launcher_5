@@ -14,9 +14,6 @@ contextBridge.exposeInMainWorld('api', {
   scan: cfg => ipcRenderer.invoke('scan', cfg),
   getStartup: () => ipcRenderer.invoke('getStartup'),
   setStartup: on => ipcRenderer.invoke('setStartup', on),
-  coDiscover: cfg => ipcRenderer.invoke('coDiscover', cfg),
-  coPoints: instance => ipcRenderer.invoke('coPoints', instance),
-  aiTurn: (provider, cfg, system, messages, tools) => ipcRenderer.invoke('aiTurn', provider, cfg, system, messages, tools),
   configPath: () => ipcRenderer.invoke('configPath'),
   checkUpdate: () => ipcRenderer.invoke('checkUpdate'),
   applyUpdate: () => ipcRenderer.invoke('applyUpdate')
