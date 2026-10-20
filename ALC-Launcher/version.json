@@ -1,6 +1,6 @@
 {
-  "build": 37,
-  "notes": "Removed the co-pilot feature",
+  "build": 38,
+  "notes": "New About window (status bar, bottom right)",
   "files": [
     "index.html", "style.css", "modern.css", "app.js", "cat.js", "web-api.js", "manifest.webmanifest", "version.json",
     "logo.png", "logo-body.png", "logo-bar.png",

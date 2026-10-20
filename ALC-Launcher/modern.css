@@ -404,3 +404,9 @@ html[data-ui="modern"] .notes-empty{margin:6px 2px;font-size:12.5px;line-height:
   html[data-ui="modern"] .notes{position:fixed;top:72px;right:12px;bottom:56px;z-index:30;width:min(320px,calc(100vw - 24px));margin:0;padding:12px;overflow:auto;
     border-radius:var(--r-xl);background:var(--panel);border:1px solid var(--line-strong);box-shadow:var(--shadow-lg);animation:m-pop .2s var(--ease)}
 }
+html[data-ui="modern"] .about-logo{filter:drop-shadow(0 4px 14px rgba(134,201,95,.35))}
+html[data-ui="modern"] .about h2{font-size:20px;margin:0}
+html[data-ui="modern"] .about-ver{display:inline-block;padding:3px 9px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line);color:var(--faint)}
+html[data-ui="modern"] .about-desc{font-size:13px}
+html[data-ui="modern"] .about-by{color:var(--dim)}
+html[data-ui="modern"] .about-by b{color:var(--text);font-weight:650}

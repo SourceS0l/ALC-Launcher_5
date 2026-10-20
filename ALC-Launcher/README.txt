@@ -185,3 +185,7 @@ Open at Windows startup (desktop app)
 - The button shows what Windows will really do: if the app was disabled in Task Manager it shows "off",
   and turning it on again from the app re-enables it.
 - If the app's folder is moved, the next time it is opened from the new place the startup entry follows it.
+
+About
+- "About" in the status bar opens a window with the app's logo, build number, a short description and the
+  credit "Created by Scott Santos", plus a Check for updates button.

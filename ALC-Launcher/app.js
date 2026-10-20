@@ -872,6 +872,9 @@ $('updBtn').onclick = async () => {
   const err = await window.api.applyUpdate();   // on success the window reloads with the new version
   if (err) { say('Update failed: ' + err + '. Check your internet connection and try again.', 'error'); $('updBtn').disabled = false; }
 };
+// About window: logo, build, what the app does, and who made it
+$('aboutBtn').onclick = () => { $('aboutVer').textContent = $('stamp').textContent; $('aboutDlg').showModal(); };
+$('aboutCheck').onclick = () => { $('aboutDlg').close(); $('checkBtn').click(); };
 $('checkBtn').onclick = async () => {
   $('checkBtn').disabled = true; say('Checking for updates...');
   await checkUpdate(true);
